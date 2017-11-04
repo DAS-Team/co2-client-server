@@ -1,8 +1,10 @@
 package client;
 
+import com.sun.org.apache.bcel.internal.generic.RET;
 import server.CO2Server;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
+import java.io.IOException;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.List;
@@ -13,12 +15,15 @@ public class CO2ClientImpl extends UnicastRemoteObject implements CO2Client {
     private final UUID uuid;
     private List<ClientState> clientStates;
     private final int floor;
+    private double latestPpmReading;
+    private final SerialSensorReader sensor;
 
     public CO2ClientImpl(CO2Server server, int floor) throws RemoteException {
         super();
         this.server = server;
         this.uuid = UUID.randomUUID();
         this.floor = floor;
+        this.sensor = new SerialSensorReader();
     }
 
     @Override
@@ -47,18 +52,28 @@ public class CO2ClientImpl extends UnicastRemoteObject implements CO2Client {
         return uuid;
     }
 
+    // Polls the sensor for the current CO2 PPM value
+    private double pollPpmSensor(){
+        return latestPpmReading;
+    }
+
     @Override
     public double getPPM() {
-        // TODO: Get current PPM value from Arduino or rPi
-        throw new NotImplementedException();
+        try {
+            latestPpmReading = sensor.pollForPPM();
+            return latestPpmReading;
+        } catch (IOException e) {
+            // For now just fail, if seen in prod then there's an issue.
+            throw new IllegalStateException();
+        }
     }
 
     @Override
     // In the case that the client becomes disconnected, this will unsubscribe itself from the server.
     public void unreferenced() {
+        // TODO: Check if need to sensor.close() here
         server.unsubscribe(this);
     }
-
 
     @Override
     // true iff uuid == o.uuid
