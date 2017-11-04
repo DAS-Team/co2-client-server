@@ -1,6 +1,8 @@
 package client;
 
+import javax.swing.text.html.Option;
 import java.io.Serializable;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -9,9 +11,9 @@ import java.util.UUID;
 public class ClientState implements Serializable {
     private final UUID clientUuid;
     private final double ppm;
-    private final int floorNum;
+    private final Integer floorNum;
 
-    public ClientState(CO2Client client){
+    ClientState(CO2Client client){
         this.clientUuid = client.getUUID();
         this.floorNum = client.getFloor();
         this.ppm = client.getPPM();
@@ -31,7 +33,7 @@ public class ClientState implements Serializable {
         return ppm;
     }
 
-    public int getFloorNum() {
+    public int getFloorNum(){
         return floorNum;
     }
 }

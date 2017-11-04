@@ -18,7 +18,7 @@ public interface CO2Client extends Remote, Unreferenced {
     void sendNewState();
 
     /**
-     * @return the floor that the client is located on.
+     * @return the floor of the building that the client is located on.
      */
     int getFloor();
 
