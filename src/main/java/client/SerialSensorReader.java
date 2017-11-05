@@ -1,16 +1,17 @@
 package client;
 
-// Roughly based on https://github.com/emersonmoretto/ArduinoTurbo-Java/blob/master/Mapper/src/br/eng/moretto/arduinoturbo/SerialTest.java
-// but using jrxtx since it's still being maintained. API is slightly different.
 // Hopefully an ADC will replace this class before deployment!
 
 import org.openmuc.jrxtx.*;
 
-import java.io.*;
-import java.nio.charset.Charset;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.DoubleSummaryStatistics;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * Reads PPM sensor values coming from a serial device.
@@ -22,11 +23,12 @@ public class SerialSensorReader implements AutoCloseable {
 
     private SerialPort serialPort;
     /** The port we're normally going to use. */
-    private static final String PORT_NAMES[] = {
-            "/dev/ttyACM1", // Raspberry Pi
+    private static final List<String> PORT_NAMES = Arrays.asList(
+            "/dev/ttyACM0", // Raspberry Pi
+            "/dev/ttyACM1", // Some Linux distros
             "/dev/ttyUSB0", // Some Linux distros
             "COM3"          // Windows apparently
-    };
+    );
     /**
      * The {@link InputStream} for the chars into the port.
      */
@@ -36,14 +38,29 @@ public class SerialSensorReader implements AutoCloseable {
 
     private void init(){
         try {
-            serialPort = SerialPortBuilder.newBuilder(PORT_NAMES[0])
-                    .setBaudRate(BAUD_RATE)
-                    .setDataBits(DataBits.DATABITS_8)
-                    .setStopBits(StopBits.STOPBITS_1)
-                    .setParity(Parity.NONE)
-                    .build();
+            List<String> ports = Arrays.stream(SerialPortBuilder.getSerialPortNames())
+                    .filter(PORT_NAMES::contains)
+                    .collect(Collectors.toList());
 
-            input = serialPort.getInputStream();
+            if(ports.isEmpty()){
+                throw new IllegalStateException("No ports available");
+            }
+            else if(ports.size() > 1){
+                throw new IllegalStateException("Ambiguous port");
+            }
+            else {
+                System.out.println("Found valid port: " + ports.get(0));
+
+                serialPort = SerialPortBuilder.newBuilder(ports.get(0))
+                        .setBaudRate(BAUD_RATE)
+                        .setDataBits(DataBits.DATABITS_8)
+                        .setStopBits(StopBits.STOPBITS_1)
+                        .setParity(Parity.NONE)
+                        .build();
+
+                input = serialPort.getInputStream();
+            }
+
         } catch (IOException e) {
             e.printStackTrace();
         }

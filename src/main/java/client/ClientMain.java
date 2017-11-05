@@ -43,7 +43,6 @@ public class ClientMain {
             @Override
             public void run() {
                 try {
-                    System.out.println(client.getPPM());
                     client.sendNewState();
                 } catch (RemoteException e) {
                     e.printStackTrace();
