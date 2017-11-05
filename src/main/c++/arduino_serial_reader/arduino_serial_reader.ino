@@ -1,7 +1,9 @@
 long randNumber;
 
-int sensorPin = A0;
-int sensorVal = 0;
+int sensor1Pin = A0;
+int sensor1Val = 0;
+int sensor2Pin = A1;
+int sensor2Val = 0;
 
 
 
@@ -10,7 +12,9 @@ void setup() {
 }
 
 void loop() {
-  sensorVal = analogRead(sensorPin);
-  Serial.println(String(sensorVal));
+  sensor1Val = analogRead(sensor1Pin);
+  sensor2Val = analogRead(sensor2Pin);
+  
+  Serial.println(String((sensor1Val + sensor2Val) / 2));
   delay(50);
 }

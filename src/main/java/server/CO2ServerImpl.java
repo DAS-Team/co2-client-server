@@ -3,6 +3,7 @@ package server;
 import client.CO2Client;
 import client.ClientState;
 
+import java.rmi.RemoteException;
 import java.util.*;
 
 public class CO2ServerImpl implements CO2Server {
@@ -64,7 +65,7 @@ public class CO2ServerImpl implements CO2Server {
     }
 
     @Override
-    public void publish() {
+    public void publish() throws RemoteException {
         List<ClientState> clientStateList = calculateSmoothedClientStateList();
 
         for(CO2Client client : clients){

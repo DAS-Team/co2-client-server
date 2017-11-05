@@ -1,16 +1,15 @@
 package client;
 
-import com.sun.org.apache.bcel.internal.generic.RET;
 import server.CO2Server;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.io.IOException;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
+import java.rmi.server.Unreferenced;
 import java.util.List;
 import java.util.UUID;
 
-public class CO2ClientImpl extends UnicastRemoteObject implements CO2Client {
+public class CO2ClientImpl extends UnicastRemoteObject implements CO2Client, Unreferenced {
     private final CO2Server server;
     private final UUID uuid;
     private List<ClientState> clientStates;
@@ -38,7 +37,7 @@ public class CO2ClientImpl extends UnicastRemoteObject implements CO2Client {
     }
 
     @Override
-    public void sendNewState() {
+    public void sendNewState() throws RemoteException {
         server.receiveStateUpdate(new ClientState(this));
     }
 
@@ -52,15 +51,11 @@ public class CO2ClientImpl extends UnicastRemoteObject implements CO2Client {
         return uuid;
     }
 
-    // Polls the sensor for the current CO2 PPM value
-    private double pollPpmSensor(){
-        return latestPpmReading;
-    }
-
     @Override
     public double getPPM() {
         try {
-            latestPpmReading = sensor.pollForPPM();
+            // TODO: Fix this?
+            latestPpmReading = sensor.pollForPPM().orElse(0.0);
             return latestPpmReading;
         } catch (IOException e) {
             // For now just fail, if seen in prod then there's an issue.
@@ -72,7 +67,11 @@ public class CO2ClientImpl extends UnicastRemoteObject implements CO2Client {
     // In the case that the client becomes disconnected, this will unsubscribe itself from the server.
     public void unreferenced() {
         // TODO: Check if need to sensor.close() here
-        server.unsubscribe(this);
+        try {
+            server.unsubscribe(this);
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override

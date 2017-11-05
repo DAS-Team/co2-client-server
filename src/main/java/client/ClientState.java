@@ -1,8 +1,7 @@
 package client;
 
-import javax.swing.text.html.Option;
 import java.io.Serializable;
-import java.util.Optional;
+import java.rmi.RemoteException;
 import java.util.UUID;
 
 /**
@@ -13,7 +12,7 @@ public class ClientState implements Serializable {
     private final double ppm;
     private final Integer floorNum;
 
-    ClientState(CO2Client client){
+    ClientState(CO2Client client) throws RemoteException {
         this.clientUuid = client.getUUID();
         this.floorNum = client.getFloor();
         this.ppm = client.getPPM();
