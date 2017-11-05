@@ -14,7 +14,6 @@ public class CO2ClientImpl extends UnicastRemoteObject implements CO2Client, Unr
     private final UUID uuid;
     private List<ClientState> clientStates;
     private final int floor;
-    private double latestPpmReading;
     private final SerialSensorReader sensor;
 
     public CO2ClientImpl(CO2Server server, int floor) throws RemoteException {
@@ -27,6 +26,7 @@ public class CO2ClientImpl extends UnicastRemoteObject implements CO2Client, Unr
 
     @Override
     public void updateState(List<ClientState> clientStateList) {
+        System.out.println("Got client state list from server");
         this.clientStates = clientStateList;
 
         // This would be true iff we didn't receive a message about ourselves.
@@ -55,8 +55,7 @@ public class CO2ClientImpl extends UnicastRemoteObject implements CO2Client, Unr
     public double getPPM() {
         try {
             // TODO: Fix this?
-            latestPpmReading = sensor.pollForPPM().orElse(0.0);
-            return latestPpmReading;
+            return sensor.pollForPPM().orElse(0.0);
         } catch (IOException e) {
             // For now just fail, if seen in prod then there's an issue.
             throw new IllegalStateException();
@@ -92,4 +91,5 @@ public class CO2ClientImpl extends UnicastRemoteObject implements CO2Client, Unr
         result = 31 * result + uuid.hashCode();
         return result;
     }
+
 }

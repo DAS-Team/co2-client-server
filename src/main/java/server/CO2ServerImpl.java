@@ -4,9 +4,11 @@ import client.CO2Client;
 import client.ClientState;
 
 import java.rmi.RemoteException;
+import java.rmi.server.UnicastRemoteObject;
 import java.util.*;
+import java.util.function.Supplier;
 
-public class CO2ServerImpl implements CO2Server {
+public class CO2ServerImpl extends UnicastRemoteObject implements CO2Server {
     private final Set<CO2Client> clients;
 
     /* Contains the ClientStates received since the last publish()
@@ -15,23 +17,26 @@ public class CO2ServerImpl implements CO2Server {
      */
     private final Map<UUID, List<ClientState>> statesReceived;
 
-    public CO2ServerImpl(){
+    public CO2ServerImpl() throws RemoteException {
+        super();
         this.clients = new HashSet<>();
         this.statesReceived = new HashMap<>();
     }
 
 
     @Override
-    public void subscribe(CO2Client client) {
+    public synchronized void subscribe(CO2Client client) throws RemoteException {
+        System.out.println("Client with UUID: " + client.getUUID() + " subscribed");
         clients.add(client);
     }
 
     @Override
-    public void unsubscribe(CO2Client client) {
+    public synchronized void unsubscribe(CO2Client client) throws RemoteException {
+        System.out.println("Client with UUID: " + client.getUUID() + " unsubscribed");
         clients.remove(client);
     }
 
-    private List<ClientState> calculateSmoothedClientStateList(){
+    private synchronized List<ClientState> calculateSmoothedClientStateList(){
         List<ClientState> smoothedStates = new ArrayList<>();
 
         for(Map.Entry<UUID, List<ClientState>> entry : statesReceived.entrySet()){
@@ -48,7 +53,7 @@ public class CO2ServerImpl implements CO2Server {
             double averagePpm = entry.getValue().stream()
                     .mapToDouble(ClientState::getPpm)
                     .average()
-                    .orElse(0.0);
+                    .orElseThrow(() -> new IllegalStateException("List of states is empty"));
 
             /*
                 double ppmVariance = MathUtils.variance(averagePpm, entry.getValue()
@@ -65,7 +70,12 @@ public class CO2ServerImpl implements CO2Server {
     }
 
     @Override
-    public void publish() throws RemoteException {
+    public synchronized void publish() throws RemoteException {
+        if(clients.isEmpty()){
+            statesReceived.clear();
+            return;
+        }
+
         List<ClientState> clientStateList = calculateSmoothedClientStateList();
 
         for(CO2Client client : clients){
@@ -76,7 +86,9 @@ public class CO2ServerImpl implements CO2Server {
     }
 
     @Override
-    public void receiveStateUpdate(ClientState newState) {
+    public synchronized void receiveStateUpdate(ClientState newState) {
+        System.out.println("Received new state from client with UUID: " + newState.getClientUuid());
+
         statesReceived.putIfAbsent(newState.getClientUuid(), new ArrayList<>());
         List<ClientState> currentList = statesReceived.get(newState.getClientUuid());
 
