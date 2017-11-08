@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.DoubleSummaryStatistics;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -16,7 +17,7 @@ import java.util.stream.Collectors;
 /**
  * Reads PPM sensor values coming from a serial device.
  */
-public class SerialSensorReader implements AutoCloseable {
+public class SerialSensorReader implements SensorReader {
     public SerialSensorReader(){
         init();
     }
@@ -83,6 +84,7 @@ public class SerialSensorReader implements AutoCloseable {
         return outputStream.toString(StandardCharsets.UTF_8.name());
     }
 
+    @Override
     public Optional<Double> pollForPPM() throws IOException {
         // TODO: Convert from sensor vals to PPM
         // At the moment the returned values are just whatever the uncalibrated sensor churns out.
@@ -96,9 +98,18 @@ public class SerialSensorReader implements AutoCloseable {
 
         System.out.println("Raw output: " + line);
 
-        return Optional.of(Double.parseDouble(line));
+        Double ppmVal = null;
+        try {
+            ppmVal = Double.parseDouble(line);
+        }
+        catch(NullPointerException e){
+            // Do nothing
+        }
+
+        return Optional.ofNullable(ppmVal);
     }
 
+    @Override
     public void close() throws IOException {
         serialPort.close();
     }

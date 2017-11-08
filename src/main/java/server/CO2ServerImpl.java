@@ -79,7 +79,12 @@ public class CO2ServerImpl extends UnicastRemoteObject implements CO2Server {
         List<ClientState> clientStateList = calculateSmoothedClientStateList();
 
         for(CO2Client client : clients){
-            client.updateState(clientStateList);
+            try {
+                client.updateState(clientStateList);
+            }
+            catch(RemoteException e){
+                System.err.println("Failed to deliver update to client with UUID: " + client.getUUID());
+            }
         }
 
         statesReceived.clear();
