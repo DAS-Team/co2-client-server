@@ -65,10 +65,9 @@ public class CO2ClientImpl extends UnicastRemoteObject implements CO2Client, Unr
     @Override
     // In the case that the client becomes disconnected, this will unsubscribe itself from the server.
     public void unreferenced() {
-        // TODO: Check if need to sensor.close() here
         try {
-            server.unsubscribe(this);
-        } catch (RemoteException e) {
+            close();
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -92,4 +91,9 @@ public class CO2ClientImpl extends UnicastRemoteObject implements CO2Client, Unr
         return result;
     }
 
+    @Override
+    public void close() throws Exception {
+        sensor.close();
+        sensor.close();
+    }
 }

@@ -6,7 +6,7 @@ import java.rmi.server.Unreferenced;
 import java.util.List;
 import java.util.UUID;
 
-public interface CO2Client extends Remote {
+public interface CO2Client extends Remote, AutoCloseable {
     /**
      * Updates view of current network state.
      * @param clientStateList list of states of all clients.

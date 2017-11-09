@@ -37,7 +37,7 @@ public class MCP3008SensorReader implements SensorReader {
 
     @Override
     public Optional<Double> pollForPPM() throws IOException {
-        return Optional.of(provider.getImmediateValue(analogueInput));
+        return Optional.of(converter.toPPM(provider.getImmediateValue(analogueInput)));
     }
 
     @Override

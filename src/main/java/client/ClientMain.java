@@ -15,17 +15,18 @@ import java.util.TimerTask;
 public class ClientMain {
     public static void main(String[] args) throws RemoteException, MalformedURLException, NotBoundException {
         String hostPortURL;
+        int floorNum;
 
-        if(args.length == 0){
-            System.err.println("No URL provided");
-            return;
+        if(args.length < 2){
+            System.err.println("Wrong args provided, need rmiregistry URL and floor number");
         }
-        else {
-            hostPortURL = args[0];
-        }
+
+        hostPortURL = args[0];
+        floorNum = Integer.parseInt(args[1]);
+
 
         CO2Server server = (CO2Server) Naming.lookup(hostPortURL + "/server");
-        CO2Client client = new CO2ClientImpl(server, 1);
+        CO2Client client = new CO2ClientImpl(server, floorNum);
         server.subscribe(client);
 
         // If we stop the JVM, unsubscribe first
