@@ -3,6 +3,8 @@ package server;
 import java.net.MalformedURLException;
 import java.rmi.Naming;
 import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -11,21 +13,15 @@ import java.util.TimerTask;
  */
 public class ServerMain {
     public static void main(String[] args) throws RemoteException, MalformedURLException {
-        String hostPortURL;
+        int port = 1099;
+        String hostname = "0.0.0.0";
+        String bindAddr = "//" + hostname + ":" + port + "/server";
 
-        if(args.length == 0){
-            System.err.println("No URL provided");
-            return;
-        }
-        else {
-            hostPortURL = args[0];
-        }
-
+        LocateRegistry.createRegistry(port);
         CO2Server server = new CO2ServerImpl();
+        Naming.rebind(bindAddr, server);
 
-        Naming.rebind(hostPortURL + "/server", server);
-
-        System.out.println("Server ready!");
+        System.out.println("Server ready at " + bindAddr);
 
         Timer timer = new Timer();
 
