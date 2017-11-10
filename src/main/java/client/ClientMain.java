@@ -27,7 +27,6 @@ public class ClientMain {
 
         hostPortURL = args[0];
         floorNum = Integer.parseInt(args[1]);
-        LocateRegistry.createRegistry(1099);
 
         System.out.println("Client ready!");
         System.out.println("Looking for server at " + hostPortURL + ":1099/server");

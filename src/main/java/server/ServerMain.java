@@ -2,10 +2,8 @@ package server;
 
 import java.net.MalformedURLException;
 import java.rmi.Naming;
-import java.rmi.RMISecurityManager;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
-import java.rmi.registry.Registry;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -17,6 +15,7 @@ public class ServerMain {
         int port = 1099;
         String hostname = "192.168.0.23";
         String bindAddr = "//" + hostname + ":" + port + "/server";
+        LocateRegistry.createRegistry(1099);
 
         CO2Server server = new CO2ServerImpl();
         Naming.rebind(bindAddr, server);
