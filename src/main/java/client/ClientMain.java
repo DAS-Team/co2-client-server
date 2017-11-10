@@ -33,8 +33,8 @@ public class ClientMain {
         // If we stop the JVM, unsubscribe first
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             try {
-                server.unsubscribe(client);
-            } catch (RemoteException e) {
+                client.close();
+            } catch (Exception e) {
                 e.printStackTrace();
             }
         }));

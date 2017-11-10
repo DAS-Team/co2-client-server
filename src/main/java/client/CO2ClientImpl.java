@@ -98,7 +98,7 @@ public class CO2ClientImpl extends UnicastRemoteObject implements CO2Client, Unr
 
     @Override
     public void close() throws Exception {
-        sensor.close();
+        server.unsubscribe(this);
         sensor.close();
     }
 }
