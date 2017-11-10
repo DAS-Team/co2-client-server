@@ -27,7 +27,11 @@ public class ClientMain {
         floorNum = Integer.parseInt(args[1]);
 
 
-        CO2Server server = (CO2Server) Naming.lookup(hostPortURL + "/server");
+        System.out.println("Client ready!");
+        System.out.println("Looking for server at " + hostPortURL + ":1099/server");
+        CO2Server server = (CO2Server) Naming.lookup(hostPortURL + ":1099/server");
+        System.out.println("Found it!");
+
         CO2Client client = new CO2ClientImpl(new DummySensorReader(), server, floorNum);
         server.subscribe(client);
 
