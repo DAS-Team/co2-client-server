@@ -1,6 +1,7 @@
 package client;
 
 import server.CO2Server;
+import server.CO2ServerImpl;
 
 import java.io.IOException;
 import java.rmi.RemoteException;
@@ -14,14 +15,18 @@ public class CO2ClientImpl extends UnicastRemoteObject implements CO2Client, Unr
     private final UUID uuid;
     private List<ClientState> clientStates;
     private final int floor;
-    private final SerialSensorReader sensor;
+    private final SensorReader sensor;
 
-    public CO2ClientImpl(CO2Server server, int floor) throws RemoteException {
+    public CO2ClientImpl(SensorReader sensorReader, CO2Server server, int floor) throws RemoteException {
         super();
         this.server = server;
         this.uuid = UUID.randomUUID();
         this.floor = floor;
-        this.sensor = new SerialSensorReader();
+        this.sensor = sensorReader;
+    }
+
+    public CO2ClientImpl(CO2Server server, int floor) throws IOException {
+        this(new MCP3008SensorReader(), server, floor);
     }
 
     @Override

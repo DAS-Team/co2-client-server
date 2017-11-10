@@ -11,13 +11,19 @@ repositories {
 task runServer(type: JavaExec){
     classpath sourceSets.main.runtimeClasspath
     main = "server.ServerMain"
-    args "localhost"
+    args System.getProperty("exec.args", "").split()
 }
 
 task runClient(type: JavaExec){
     classpath sourceSets.main.runtimeClasspath
     main = "client.ClientMain"
-    args "localhost"
+    args System.getProperty("exec.args", "").split()
+}
+
+task runTestClient(type: JavaExec){
+    classpath sourceSets.main.runtimeClasspath
+    main = "client.TestClientMain"
+    args System.getProperty("exec.args", "").split()
 }
 
 dependencies {
