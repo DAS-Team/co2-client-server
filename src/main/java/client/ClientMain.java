@@ -6,8 +6,9 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.rmi.Naming;
 import java.rmi.NotBoundException;
-import java.rmi.RMISecurityManager;
 import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -26,7 +27,7 @@ public class ClientMain {
 
         hostPortURL = args[0];
         floorNum = Integer.parseInt(args[1]);
-        System.setSecurityManager(new RMISecurityManager());
+        LocateRegistry.createRegistry(1099);
 
         System.out.println("Client ready!");
         System.out.println("Looking for server at " + hostPortURL + ":1099/server");

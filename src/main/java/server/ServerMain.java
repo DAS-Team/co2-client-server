@@ -17,9 +17,7 @@ public class ServerMain {
         int port = 1099;
         String hostname = "192.168.0.23";
         String bindAddr = "//" + hostname + ":" + port + "/server";
-        System.setSecurityManager(new RMISecurityManager());
 
-        LocateRegistry.createRegistry(port);
         CO2Server server = new CO2ServerImpl();
         Naming.rebind(bindAddr, server);
 
