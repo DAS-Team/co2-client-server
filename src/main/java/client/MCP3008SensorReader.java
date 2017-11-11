@@ -37,6 +37,12 @@ public class MCP3008SensorReader implements SensorReader {
 
     @Override
     public Optional<Double> pollForPPM() throws IOException {
+        double outputVal = provider.getImmediateValue(analogueInput);
+        double asPpm = converter.toPPM(outputVal);
+        double asRZero = converter.toRZero(outputVal);
+
+        System.out.println("Read state, analogue value:" + outputVal + ", as R0: " + asRZero + ", as PPM: " + asPpm);
+
         return Optional.of(converter.toPPM(provider.getImmediateValue(analogueInput)));
     }
 
