@@ -25,8 +25,8 @@ public class CO2ClientImpl extends UnicastRemoteObject implements CO2Client, Unr
         this.sensor = sensorReader;
     }
 
-    public CO2ClientImpl(CO2Server server, int floor) throws IOException {
-        this(new MCP3008SensorReader(), server, floor);
+    public CO2ClientImpl(CO2Server server, int floor, double rZeroValue) throws IOException {
+        this(new MCP3008SensorReader(rZeroValue), server, floor);
     }
 
     @Override

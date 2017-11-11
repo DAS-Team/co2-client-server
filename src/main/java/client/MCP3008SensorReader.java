@@ -18,9 +18,7 @@ import java.util.Optional;
  */
 public class MCP3008SensorReader implements SensorReader {
     private final GpioController gpio = GpioFactory.getInstance();
-    private final MQ135PPMConverter converter = new MQ135PPMConverter.Builder()
-            .setRZero(288.0)
-            .build();
+    private final MQ135PPMConverter converter;
     private final AdcGpioProvider provider = new MCP3008GpioProvider(SpiChannel.CS0);
     private final GpioPinAnalogInput analogueInput = gpio.provisionAnalogInputPin(provider, MCP3008Pin.CH0, "CO2 Input");
 
@@ -28,11 +26,14 @@ public class MCP3008SensorReader implements SensorReader {
 
     //private Double ppmValue = null;
 
-    public MCP3008SensorReader() throws IOException {
+    public MCP3008SensorReader(double rZeroValue) throws IOException {
         //provider.setEventThreshold(10, analogueInput);
         //provider.setMonitorInterval(100);
         //GpioPinListenerAnalog listener = event -> ppmValue = converter.toPPM(event.getValue());
         //gpio.addListener(listener, analogueInput);
+        converter = new MQ135PPMConverter.Builder()
+                .setRZero(rZeroValue)
+                .build();
     }
 
     @Override

@@ -28,7 +28,7 @@ The Java API can be installed using Gradle.
 11. Run `mkdir co2`, then `cd co2/`.
 12. Run `git clone https://github.com/DAS-Team/co2-client-server.git`, then `cd co2-client-server`.
 13. Run `./gradlew build`.
-14. Run `./gradlew runClient -Djava.rmi.server.hostname="<client_ip>" -Dexec.args="<server_ip> <floor_number>"`
+14. Run `./gradlew runClient -Djava.rmi.server.hostname="<client_ip>" -Dexec.args="<server_ip> <floor_number> <rzero_val>"`
 
 ## Server Setup
 

@@ -7,6 +7,7 @@ import java.net.MalformedURLException;
 import java.rmi.Naming;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
+import java.util.DoubleSummaryStatistics;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -17,17 +18,19 @@ public class ClientMain {
     public static void main(String[] args) throws IOException, NotBoundException {
         String hostname;
         int floorNum;
+        double rZeroVal;
 
-        if(args.length < 2){
-            System.err.println("Wrong args provided, need rmiregistry URL and floor number");
+        if(args.length < 3){
+            System.err.println("Wrong args provided, need rmiregistry URL, floor number and RZero value");
         }
 
         hostname = args[0];
         floorNum = Integer.parseInt(args[1]);
+        rZeroVal = Double.parseDouble(args[2]);
 
 
         CO2Server server = (CO2Server) Naming.lookup("//" + hostname + ":1099/server");
-        CO2Client client = new CO2ClientImpl(server, floorNum);
+        CO2Client client = new CO2ClientImpl(server, floorNum, rZeroVal);
         server.subscribe(client);
 
         // If we stop the JVM, unsubscribe first
