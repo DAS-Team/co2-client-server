@@ -92,7 +92,7 @@ public class CO2ServerImpl extends UnicastRemoteObject implements CO2Server {
 
     @Override
     public synchronized void receiveStateUpdate(ClientState newState) {
-        System.out.println("Received new state from client with UUID: " + newState.getClientUuid());
+        System.out.println("Received new state, PPM: " + newState.getPpm() + " from client with UUID: " + newState.getClientUuid());
 
         statesReceived.putIfAbsent(newState.getClientUuid(), new ArrayList<>());
         List<ClientState> currentList = statesReceived.get(newState.getClientUuid());
