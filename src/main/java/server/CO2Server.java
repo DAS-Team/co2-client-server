@@ -5,7 +5,6 @@ import client.ClientState;
 
 import java.rmi.Remote;
 import java.rmi.RemoteException;
-import java.util.List;
 
 public interface CO2Server extends Remote {
     /**
@@ -23,7 +22,7 @@ public interface CO2Server extends Remote {
     /**
      * Notify all clients of the current network state.
      */
-    void publish() throws RemoteException;
+    void publishIfStateChanged() throws RemoteException;
 
     /**
      * Updates the server's view of a client's state.

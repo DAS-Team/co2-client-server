@@ -3,13 +3,8 @@ package client;
 import server.CO2Server;
 
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.rmi.Naming;
 import java.rmi.NotBoundException;
-import java.rmi.RemoteException;
-import java.util.DoubleSummaryStatistics;
-import java.util.Timer;
-import java.util.TimerTask;
 
 /**
  * Created by paul on 05/11/17.
@@ -42,17 +37,9 @@ public class ClientMain {
             }
         }));
 
-        Timer timer = new Timer();
+        server.receiveStateUpdate(new ClientState(client, client.pollForPPM()));
 
-        timer.scheduleAtFixedRate(new TimerTask() {
-            @Override
-            public void run() {
-                try {
-                    client.sendNewState();
-                } catch (RemoteException e) {
-                    e.printStackTrace();
-                }
-            }
-        }, 0, 1000);
+        // From here on, state changes will be sent automatically
+
     }
 }

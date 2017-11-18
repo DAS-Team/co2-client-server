@@ -6,97 +6,92 @@ import client.ClientState;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.*;
-import java.util.function.Supplier;
 
 public class CO2ServerImpl extends UnicastRemoteObject implements CO2Server {
-    private final Set<CO2Client> clients;
+    private final Map<Integer, Floor> floors;
+    private final double FLOOR_WEIGHTING = 1.0; // alpha / beta in report
+    private Map<Floor, List<FloorValueState>> prevFloorValueMap = new HashMap<>();
 
-    /* Contains the ClientStates received since the last publish()
-     * This way we could also calculate the variance if we want.
-     * Could be useful for displaying uncertainty in our results.
-     */
-    private final Map<UUID, List<ClientState>> statesReceived;
 
     public CO2ServerImpl() throws RemoteException {
         super();
-        this.clients = new HashSet<>();
-        this.statesReceived = new HashMap<>();
+        this.floors = new HashMap<>();
     }
 
 
     @Override
     public synchronized void subscribe(CO2Client client) throws RemoteException {
         System.out.println("Client with UUID: " + client.getUUID() + " subscribed");
-        clients.add(client);
+        floors.putIfAbsent(client.getFloor(), new Floor(client.getFloor()));
+        floors.get(client.getFloor()).addClient(client);
     }
 
     @Override
     public synchronized void unsubscribe(CO2Client client) throws RemoteException {
         System.out.println("Client with UUID: " + client.getUUID() + " unsubscribed");
-        clients.remove(client);
+        floors.putIfAbsent(client.getFloor(), new Floor(client.getFloor()));
+        floors.get(client.getFloor()).removeClient(client);
     }
 
-    private synchronized List<ClientState> calculateSmoothedClientStateList(){
-        List<ClientState> smoothedStates = new ArrayList<>();
+    private Map<Floor, List<FloorValueState>> calcFloorValueMap(){
+        Map<Floor, List<FloorValueState>> floorValueMap = new HashMap<>();
 
-        for(Map.Entry<UUID, List<ClientState>> entry : statesReceived.entrySet()){
-            int floorNum;
-
-            // If there are no client states, there's no point in sending them anyway so just continue.
-            if(entry.getValue().isEmpty()){
-                continue;
+        for(Floor currentFloor: floors.values()){
+            for(Floor newFloor: floors.values()){
+                floorValueMap.putIfAbsent(currentFloor, new ArrayList<>());
+                floorValueMap.get(currentFloor).add(new FloorValueState(currentFloor, newFloor, currentFloor.valueOfMovingTo(newFloor, FLOOR_WEIGHTING)));
             }
-            else {
-                floorNum = entry.getValue().get(0).getFloorNum();
-            }
-
-            double averagePpm = entry.getValue().stream()
-                    .mapToDouble(ClientState::getPpm)
-                    .average()
-                    .orElseThrow(() -> new IllegalStateException("List of states is empty"));
-
-            /*
-                double ppmVariance = MathUtils.variance(averagePpm, entry.getValue()
-                    .stream()
-                    .map(ClientState::getPpm)
-                    .collect(Collectors.toList()));
-            */
-
-            ClientState smoothedState = new ClientState(entry.getKey(), averagePpm, floorNum);
-            smoothedStates.add(smoothedState);
         }
 
-        return smoothedStates;
+
+        return floorValueMap;
+    }
+
+    private boolean hasFloorValueOrderingChanged(Floor floor, Map<Floor, List<FloorValueState>> floorValueMap){
+        List<FloorValueState> sortedNewStateSet = floorValueMap.get(floor);
+        List<FloorValueState> sortedPrevStateSet = prevFloorValueMap.getOrDefault(floor,  null);
+
+        if(sortedPrevStateSet == null){
+            return true;
+        }
+
+        if(sortedNewStateSet.size() != sortedPrevStateSet.size()){
+            return true;
+        }
+
+        Collections.sort(sortedNewStateSet);
+        Collections.sort(sortedPrevStateSet);
+
+        for(int i = 0; i < sortedNewStateSet.size(); ++i){
+            if(sortedNewStateSet.get(i).getNewFloor() != sortedPrevStateSet.get(i).getNewFloor()){
+                return false;
+            }
+        }
+
+        return true;
     }
 
     @Override
-    public synchronized void publish() throws RemoteException {
-        if(clients.isEmpty()){
-            statesReceived.clear();
+    public synchronized void publishIfStateChanged() throws RemoteException {
+        if(floors.isEmpty()){
             return;
         }
 
-        List<ClientState> clientStateList = calculateSmoothedClientStateList();
+        Map<Floor, List<FloorValueState>> floorValueMap = calcFloorValueMap();
 
-        for(CO2Client client : clients){
-            try {
-                client.updateState(clientStateList);
-            }
-            catch(RemoteException e){
-                System.err.println("Failed to deliver update to client with UUID: " + client.getUUID());
-            }
-        }
+        floorValueMap
+                .entrySet()
+                .stream()
+                .filter(e -> hasFloorValueOrderingChanged(e.getKey(), floorValueMap))
+                .forEach(e -> e.getKey().publishFloorValueStates(e.getValue()));
 
-        statesReceived.clear();
+        prevFloorValueMap = floorValueMap;
     }
 
     @Override
-    public synchronized void receiveStateUpdate(ClientState newState) {
+    public synchronized void receiveStateUpdate(ClientState newState) throws RemoteException {
         System.out.println("Received new state, PPM: " + newState.getPpm() + " from client with UUID: " + newState.getClientUuid());
-
-        statesReceived.putIfAbsent(newState.getClientUuid(), new ArrayList<>());
-        List<ClientState> currentList = statesReceived.get(newState.getClientUuid());
-
-        currentList.add(newState);
+        floors.get(newState.getFloorNum()).addStateUpdate(newState);
+        publishIfStateChanged();
     }
 }

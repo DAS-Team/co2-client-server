@@ -14,10 +14,10 @@ public class ClientState implements Serializable {
     private final double ppm;
     private final Integer floorNum;
 
-    ClientState(CO2Client client) throws RemoteException {
+    ClientState(CO2Client client, double ppm) throws RemoteException {
         this.clientUuid = client.getUUID();
         this.floorNum = client.getFloor();
-        this.ppm = client.getPPM();
+        this.ppm = ppm;
         this.timestamp = Instant.now();
     }
 

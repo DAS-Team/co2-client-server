@@ -1,22 +1,19 @@
 package client;
 
+import server.FloorValueState;
+
+import java.io.IOException;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
-import java.rmi.server.Unreferenced;
-import java.util.List;
+import java.util.Collection;
 import java.util.UUID;
 
 public interface CO2Client extends Remote, AutoCloseable {
     /**
      * Updates view of current network state.
-     * @param clientStateList list of states of all clients.
+     * @param floorValueStates list of value states of all floors.
      */
-    void updateState(List<ClientState> clientStateList) throws RemoteException;
-
-    /**
-     * Notifies the server of the current client state.
-     */
-    void sendNewState() throws RemoteException;
+    void updateState(Collection<FloorValueState> floorValueStates) throws RemoteException;
 
     /**
      * @return the floor of the building that the client is located on.
@@ -29,7 +26,8 @@ public interface CO2Client extends Remote, AutoCloseable {
     UUID getUUID() throws RemoteException;
 
     /**
-     * @return a measurement of CO2 concentration in ppm.
+     * @return the current CO2 sensor value in parts-per-million.
      */
-    double getPPM() throws RemoteException;
+    double pollForPPM() throws IOException;
+
 }

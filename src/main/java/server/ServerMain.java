@@ -4,8 +4,6 @@ import java.net.MalformedURLException;
 import java.rmi.Naming;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
-import java.util.Timer;
-import java.util.TimerTask;
 
 /**
  * Created by paul on 05/11/17.
@@ -31,18 +29,5 @@ public class ServerMain {
         Naming.rebind(bindAddr, server);
 
         System.out.println("Server ready!");
-
-        Timer timer = new Timer();
-
-        timer.scheduleAtFixedRate(new TimerTask() {
-            @Override
-            public void run() {
-                try {
-                    server.publish();
-                } catch (RemoteException e) {
-                    e.printStackTrace();
-                }
-            }
-        }, 0, 10 * 1000);
     }
 }

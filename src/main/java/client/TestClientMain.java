@@ -43,8 +43,8 @@ public class TestClientMain {
             @Override
             public void run() {
                 try {
-                    client.sendNewState();
-                } catch (RemoteException e) {
+                    server.receiveStateUpdate(new ClientState(client, client.pollForPPM()));
+                } catch (java.io.IOException e) {
                     e.printStackTrace();
                 }
             }

@@ -1,19 +1,21 @@
 package client;
 
 import server.CO2Server;
-import server.CO2ServerImpl;
+import server.FloorValueState;
 
 import java.io.IOException;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.rmi.server.Unreferenced;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
 public class CO2ClientImpl extends UnicastRemoteObject implements CO2Client, Unreferenced {
     private final CO2Server server;
     private final UUID uuid;
-    private List<ClientState> clientStates;
+    private List<FloorValueState> floorStates;
     private final int floor;
     private final SensorReader sensor;
 
@@ -23,6 +25,16 @@ public class CO2ClientImpl extends UnicastRemoteObject implements CO2Client, Unr
         this.uuid = UUID.randomUUID();
         this.floor = floor;
         this.sensor = sensorReader;
+
+        sensor.setListener(newCO2Level -> {
+                    try {
+                        server.receiveStateUpdate(new ClientState(this, newCO2Level));
+                    } catch (RemoteException e) {
+                        System.err.println("Failed to send new CO2 value to server");
+                    }
+                },
+                100
+        );
     }
 
     public CO2ClientImpl(CO2Server server, int floor, double rZeroValue) throws IOException {
@@ -30,21 +42,12 @@ public class CO2ClientImpl extends UnicastRemoteObject implements CO2Client, Unr
     }
 
     @Override
-    public void updateState(List<ClientState> clientStateList) {
-        System.out.println("Got client state list from server");
-        this.clientStates = clientStateList;
-
-        // This would be true iff we didn't receive a message about ourselves.
-        // Should we handle that in some way?
-        /* if(this.clientStates.stream().map(ClientState::getClientUuid).noneMatch(e -> e == this.uuid)){
-         * }
-         */
+    public void updateState(Collection<FloorValueState> floorValueStates) throws RemoteException {
+        System.out.println("Got floor state list from server");
+        floorStates = new ArrayList<>(floorValueStates);
     }
 
-    @Override
-    public void sendNewState() throws RemoteException {
-        server.receiveStateUpdate(new ClientState(this));
-    }
+
 
     @Override
     public int getFloor() {
@@ -57,14 +60,8 @@ public class CO2ClientImpl extends UnicastRemoteObject implements CO2Client, Unr
     }
 
     @Override
-    public double getPPM() {
-        try {
-            // TODO: Fix this?
-            return sensor.pollForPPM().orElse(0.0);
-        } catch (IOException e) {
-            // For now just fail, if seen in prod then there's an issue.
-            throw new IllegalStateException();
-        }
+    public double pollForPPM() throws IOException {
+        return sensor.pollForPPM();
     }
 
     @Override
