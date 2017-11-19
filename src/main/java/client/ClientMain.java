@@ -26,7 +26,7 @@ public class ClientMain {
 
         CO2Server server = (CO2Server) Naming.lookup("//" + hostname + ":1099/server");
         CO2Client client = new CO2ClientImpl(server, floorNum, rZeroVal);
-        server.subscribe(client);
+        server.subscribe(client, new ClientState(client, client.pollForPPM()));
 
         // If we stop the JVM, unsubscribe first
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -37,9 +37,6 @@ public class ClientMain {
             }
         }));
 
-        server.receiveStateUpdate(new ClientState(client, client.pollForPPM()));
-
         // From here on, state changes will be sent automatically
-
     }
 }

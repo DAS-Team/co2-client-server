@@ -47,8 +47,6 @@ public class CO2ClientImpl extends UnicastRemoteObject implements CO2Client, Unr
         floorStates = new ArrayList<>(floorValueStates);
     }
 
-
-
     @Override
     public int getFloor() {
         return this.floor;

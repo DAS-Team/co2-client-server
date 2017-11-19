@@ -84,14 +84,21 @@ public class Floor {
         }
     }
 
+    @Override
+    public String toString() {
+        return "Floor{" +
+                "floorNum=" + floorNum +
+                '}';
+    }
+
     public synchronized void publishFloorValueStates(Collection<FloorValueState> floorValueStates){
         for(CO2Client client: clients){
-
             try {
                 client.updateState(floorValueStates);
             }
             catch(RemoteException e){
                 System.err.println("Send to client failed");
+                e.printStackTrace();
             }
         }
     }
@@ -102,6 +109,10 @@ public class Floor {
 
     public Set<CO2Client> getClients(){
         return new HashSet<>(clients);
+    }
+
+    public boolean isEmpty(){
+        return clients.isEmpty();
     }
 
 }

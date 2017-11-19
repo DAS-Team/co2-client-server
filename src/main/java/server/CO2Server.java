@@ -11,7 +11,7 @@ public interface CO2Server extends Remote {
      * Registers a client to periodically receive updates to overall network state.
      * @param client the client to register
      */
-    void subscribe(CO2Client client) throws RemoteException;
+    void subscribe(CO2Client client, ClientState initialClientState) throws RemoteException;
 
     /**
      * Unregister a client to stop receiving network state updates.

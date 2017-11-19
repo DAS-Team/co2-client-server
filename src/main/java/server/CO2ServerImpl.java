@@ -9,7 +9,7 @@ import java.util.*;
 
 public class CO2ServerImpl extends UnicastRemoteObject implements CO2Server {
     private final Map<Integer, Floor> floors;
-    private final double FLOOR_WEIGHTING = 1.0; // alpha / beta in report
+    private final double FLOOR_WEIGHTING = 0.5; // alpha / beta in report
     private Map<Floor, List<FloorValueState>> prevFloorValueMap = new HashMap<>();
 
 
@@ -20,10 +20,11 @@ public class CO2ServerImpl extends UnicastRemoteObject implements CO2Server {
 
 
     @Override
-    public synchronized void subscribe(CO2Client client) throws RemoteException {
+    public synchronized void subscribe(CO2Client client, ClientState initialClientState) throws RemoteException {
         System.out.println("Client with UUID: " + client.getUUID() + " subscribed");
         floors.putIfAbsent(client.getFloor(), new Floor(client.getFloor()));
         floors.get(client.getFloor()).addClient(client);
+        receiveStateUpdate(initialClientState);
     }
 
     @Override
@@ -31,6 +32,10 @@ public class CO2ServerImpl extends UnicastRemoteObject implements CO2Server {
         System.out.println("Client with UUID: " + client.getUUID() + " unsubscribed");
         floors.putIfAbsent(client.getFloor(), new Floor(client.getFloor()));
         floors.get(client.getFloor()).removeClient(client);
+
+        if(floors.get(client.getFloor()).isEmpty()){
+            floors.remove(client.getFloor());
+        }
     }
 
     private Map<Floor, List<FloorValueState>> calcFloorValueMap(){
@@ -42,7 +47,6 @@ public class CO2ServerImpl extends UnicastRemoteObject implements CO2Server {
                 floorValueMap.get(currentFloor).add(new FloorValueState(currentFloor, newFloor, currentFloor.valueOfMovingTo(newFloor, FLOOR_WEIGHTING)));
             }
         }
-
 
         return floorValueMap;
     }
@@ -64,11 +68,11 @@ public class CO2ServerImpl extends UnicastRemoteObject implements CO2Server {
 
         for(int i = 0; i < sortedNewStateSet.size(); ++i){
             if(sortedNewStateSet.get(i).getNewFloor() != sortedPrevStateSet.get(i).getNewFloor()){
-                return false;
+                return true;
             }
         }
 
-        return true;
+        return false;
     }
 
     @Override

@@ -2,18 +2,15 @@ package client;
 
 import server.CO2Server;
 
-import java.net.MalformedURLException;
+import java.io.IOException;
 import java.rmi.Naming;
 import java.rmi.NotBoundException;
-import java.rmi.RemoteException;
-import java.util.Timer;
-import java.util.TimerTask;
 
 /**
  * Created by paul on 10/11/17.
  */
 public class TestClientMain {
-    public static void main(String[] args) throws RemoteException, MalformedURLException, NotBoundException {
+    public static void main(String[] args) throws IOException, NotBoundException {
         String hostname;
         int floorNum;
 
@@ -26,7 +23,7 @@ public class TestClientMain {
 
         CO2Server server = (CO2Server) Naming.lookup("//" + hostname + ":1099/server");
         CO2Client client = new CO2ClientImpl(new DummySensorReader(), server, floorNum);
-        server.subscribe(client);
+        server.subscribe(client, new ClientState(client, client.pollForPPM()));
 
         // If we stop the JVM, unsubscribe first
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -37,17 +34,5 @@ public class TestClientMain {
             }
         }));
 
-        Timer timer = new Timer();
-
-        timer.scheduleAtFixedRate(new TimerTask() {
-            @Override
-            public void run() {
-                try {
-                    server.receiveStateUpdate(new ClientState(client, client.pollForPPM()));
-                } catch (java.io.IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }, 0, 1000);
     }
 }
