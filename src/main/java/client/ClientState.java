@@ -21,13 +21,6 @@ public class ClientState implements Serializable {
         this.timestamp = Instant.now();
     }
 
-    public ClientState(UUID clientUuid, double ppm, int floorNum) {
-        this.clientUuid = clientUuid;
-        this.ppm = ppm;
-        this.floorNum = floorNum;
-        this.timestamp = Instant.now();
-    }
-
     public UUID getClientUuid() {
         return clientUuid;
     }

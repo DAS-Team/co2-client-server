@@ -9,15 +9,20 @@ public class DummySensorReader implements SensorReader {
     private final Random random = new Random();
     private Timer timer = new Timer();
     private CO2ChangeEventListener listener = null;
+    private double co2Delta = 0.0;
+    private double prevCO2 = 0.0;
 
     private class PollTask extends TimerTask {
 
         @Override
         public void run() {
             try {
-                if(listener != null){
-                    listener.onCO2LevelChange(pollForPPM());
+                double newCo2 = pollForPPM();
+                if(listener != null && Math.abs(prevCO2 - pollForPPM()) > co2Delta){
+                    listener.onCO2LevelChange(newCo2);
                 }
+
+                prevCO2 = newCo2;
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -28,8 +33,15 @@ public class DummySensorReader implements SensorReader {
 
     @Override
     public void setListener(CO2ChangeEventListener listener, double co2Delta) {
+        this.co2Delta = co2Delta;
         this.listener = listener;
         timer.schedule(new PollTask(), random.nextInt(60) * 1000);
+    }
+
+    @Override
+    public void removeListener() {
+        timer.cancel();
+        this.listener = null;
     }
 
     @Override

@@ -22,22 +22,36 @@ public class MCP3008SensorReader implements SensorReader {
     private final AdcGpioProvider provider = new MCP3008GpioProvider(SpiChannel.CS0);
     private final GpioPinAnalogInput analogueInput = gpio.provisionAnalogInputPin(provider, MCP3008Pin.CH0, "CO2 Input");
 
+    /**
+     *
+     * @param rZeroValue the resistance value of the sensor under atmospheric CO2 levels. Can be found by calling {@link MQ135PPMConverter#toRZero(double)}
+     *                   at atmospheric CO2 values.
+     * @throws IOException if the connection to the hardware sensor could not be established.
+     */
     public MCP3008SensorReader(double rZeroValue) throws IOException {
-        provider.setEventThreshold(10, analogueInput);
-        provider.setMonitorInterval(1000);
         converter = new MQ135PPMConverter.Builder()
                 .setRZero(rZeroValue)
                 .build();
+
+        provider.setMonitorInterval(1000);
     }
 
-    public void setListener(CO2ChangeEventListener listener, double co2Delta){
-        provider.setEventThreshold(co2Delta, analogueInput);
+    public void setListener(CO2ChangeEventListener listener, double ppmCo2Change){
+        provider.setEventThreshold(converter.fromPPM(ppmCo2Change), analogueInput);
         GpioPinListenerAnalog gpioListener = event -> listener.onCO2LevelChange(converter.toPPM(event.getValue()));
 
         gpio.removeAllListeners();
         gpio.addListener(gpioListener, analogueInput);
     }
 
+    public void removeListener(){
+        gpio.removeAllListeners();
+    }
+
+    /**
+     * {@inheritDoc}
+     * @throws IOException if accessing sensor fails
+     */
     public double pollForPPM() throws IOException {
         double outputVal = provider.getImmediateValue(analogueInput);
         double asPpm = converter.toPPM(outputVal);

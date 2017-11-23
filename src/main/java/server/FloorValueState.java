@@ -2,19 +2,16 @@ package server;
 
 import java.io.Serializable;
 
+/**
+ * Immutable object representing the value of moving to a new floor at the time of construction.
+ */
 public class FloorValueState implements Serializable, Comparable<FloorValueState> {
-    private final int currentFloor;
     private final int newFloor;
     private final double value;
 
-    public FloorValueState(Floor currentFloor, Floor newFloor, double value) {
-        this.currentFloor = currentFloor.getFloorNum();
+    public FloorValueState(Floor newFloor, double value) {
         this.newFloor = newFloor.getFloorNum();
         this.value = value;
-    }
-
-    public int getCurrentFloor() {
-        return currentFloor;
     }
 
     public int getNewFloor() {
@@ -27,13 +24,19 @@ public class FloorValueState implements Serializable, Comparable<FloorValueState
 
     @Override
     public int compareTo(FloorValueState other) {
-        return Double.compare(this.value, other.value);
+        int vCompare = Double.compare(this.value, other.value);
+
+        if(vCompare != 0){
+            return vCompare;
+        }
+        else {
+            return Integer.compare(this.newFloor, other.newFloor);
+        }
     }
 
     @Override
     public String toString() {
         return "FloorValueState{" +
-                "currentFloor=" + currentFloor +
                 ", newFloor=" + newFloor +
                 ", value=" + value +
                 '}';

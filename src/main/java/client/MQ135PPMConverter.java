@@ -21,14 +21,35 @@ class MQ135PPMConverter {
         this.rZero = rZero;
     }
 
+    /**
+     * @param sensorVal
+     * @return {@code sensorValue} converted to a resistance, according to the load resistance.
+     */
     private double toResistance(double sensorVal){
         return ((1023.0 / sensorVal) - 1) * rLoad;
     }
 
+    /**
+     * @param ppmVal
+     * @return {@code ppmVal} converted to the sensor reading which would have produced this value.
+     */
+    int fromPPM(double ppmVal){
+        return (int) Math.round(1023.0 / (((Math.pow(ppmVal / SCALING_FACTOR, 1.0 / EXPONENT) * rZero) /rLoad) + 1));
+    }
+
+    /**
+     * @param sensorVal
+     * @return CO2 PPM reading based on the current {@code sensorVal}
+     */
     double toPPM(double sensorVal){
         return SCALING_FACTOR * Math.pow(toResistance(sensorVal) / rZero, EXPONENT);
     }
 
+    /**
+     * @param sensorVal
+     * @return rZero value used for calibration, based on the assumption that the sensor is in atmospheric conditions.
+     * @see <a href="https://www.olimex.com/Products/Components/Sensors/SNS-MQ135/resources/SNS-MQ135.pdf">Datasheet</a>
+     */
     double toRZero(double sensorVal){
         return toResistance(sensorVal) * Math.pow(ATMOSPHERIC_CO2 / SCALING_FACTOR, -1.0 / EXPONENT);
     }

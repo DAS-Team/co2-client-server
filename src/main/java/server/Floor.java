@@ -14,13 +14,20 @@ public class Floor {
     private final int floorNum;
     private double prevC02Level = Double.POSITIVE_INFINITY;
     private final List<ClientState> stateUpdates;
-    
+
+    /**
+     * @param floorNum the floor number in the building
+     * @param clients the {@link CO2Client}s on that floor.
+     */
     public Floor(int floorNum, Set<CO2Client> clients) {
         this.clients = clients;
         this.floorNum = floorNum;
         stateUpdates = new ArrayList<>();
     }
 
+    /**
+     * @param floorNum the floor number in the building
+     */
     public Floor(int floorNum){
         this(floorNum, new HashSet<>());
     }
@@ -48,9 +55,18 @@ public class Floor {
 
         stateUpdates.add(newState);
     }
-    
+
+    /**
+     * @return the exponentially smoothed average CO2 value of this floor, based on the previous average and any new state updates which
+     *         occured since the last call.
+     * @throws IllegalStateException if no states have been recorded yet.
+     */
     public synchronized double averagePPM(){
         if(stateUpdates.isEmpty()){
+            if(prevC02Level == Double.POSITIVE_INFINITY){
+                throw new IllegalStateException("Cannot calculate average, no states seen yet");
+            }
+
             return prevC02Level;
         }
 
@@ -61,20 +77,34 @@ public class Floor {
 
         stateUpdates.clear();
 
+        // https://en.wikipedia.org/wiki/Exponential_smoothing
+        // Prevents the occasional massive spiking seen in testing by weighting the previous value more highly
+        double alpha = 0.1;
+
         if(prevC02Level == Double.POSITIVE_INFINITY || averagePPM == Double.POSITIVE_INFINITY){
             prevC02Level = averagePPM;
         }
         else {
-            prevC02Level = (averagePPM + prevC02Level) / 2;
+            prevC02Level = alpha * averagePPM + (1 - alpha) * prevC02Level;
         }
 
         return prevC02Level;
     }
 
+    /**
+     * @param otherFloor
+     * @return number of floors you need to traverse to get to {@code otherFloor}
+     */
     private int distanceToFloor(Floor otherFloor){
         return Math.abs(otherFloor.floorNum - this.floorNum);
     }
 
+    /**
+     * Value of moving from one floor to another, as described by the value function in the paper.
+     * @param newFloor
+     * @param weightingConstant alpha / beta in the paper
+     * @return value of this floor move
+     */
     public synchronized double valueOfMovingTo(Floor newFloor, double weightingConstant){
         if(newFloor.getFloorNum() == this.floorNum){
             return 0;
@@ -91,6 +121,10 @@ public class Floor {
                 '}';
     }
 
+    /**
+     * Send new {@code floorValueStates} to client.
+     * @param floorValueStates
+     */
     public synchronized void publishFloorValueStates(Collection<FloorValueState> floorValueStates){
         for(CO2Client client: clients){
             try {
@@ -107,10 +141,9 @@ public class Floor {
         return floorNum;
     }
 
-    public Set<CO2Client> getClients(){
-        return new HashSet<>(clients);
-    }
-
+    /**
+     * @return true iff there are no clients registered to this floor.
+     */
     public boolean isEmpty(){
         return clients.isEmpty();
     }

@@ -20,7 +20,7 @@ public interface CO2Server extends Remote {
     void unsubscribe(CO2Client client) throws RemoteException;
 
     /**
-     * Notify all clients of the current network state.
+     * Notify all clients of their new {@link FloorValueState}s if they have changed since the last call.
      */
     void publishIfStateChanged() throws RemoteException;
 
