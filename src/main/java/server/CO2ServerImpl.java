@@ -21,7 +21,7 @@ public class CO2ServerImpl extends UnicastRemoteObject implements CO2Server {
 
     @Override
     public synchronized void subscribe(CO2Client client, ClientState initialClientState) throws RemoteException {
-        System.out.println("Client with UUID: " + client.getUUID() + " subscribed");
+        System.out.println("Client with UUID: " + client.getUUID() + " subscribed for floor " + Integer.toString(client.getFloor()));
         floors.putIfAbsent(client.getFloor(), new Floor(client.getFloor()));
         floors.get(client.getFloor()).addClient(client);
         receiveStateUpdate(initialClientState);
@@ -105,7 +105,7 @@ public class CO2ServerImpl extends UnicastRemoteObject implements CO2Server {
 
     @Override
     public synchronized void receiveStateUpdate(ClientState newState) throws RemoteException {
-        System.out.println("Received new state, PPM: " + newState.getPpm() + " from client with UUID: " + newState.getClientUuid());
+        System.out.println("Client " + newState.getClientUuid() + " reading: " + newState.getPpm());
         floors.get(newState.getFloorNum()).addStateUpdate(newState);
         publishIfStateChanged();
     }

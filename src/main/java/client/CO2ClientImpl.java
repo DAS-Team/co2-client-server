@@ -8,6 +8,7 @@ import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.rmi.server.Unreferenced;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
@@ -27,14 +28,16 @@ public class CO2ClientImpl extends UnicastRemoteObject implements CO2Client, Unr
         this.sensor = sensorReader;
 
         sensor.setListener(newCO2Level -> {
-                    try {
-                        server.receiveStateUpdate(new ClientState(this, newCO2Level));
-                    } catch (RemoteException e) {
-                        System.err.println("Failed to send new CO2 value to server");
-                    }
-                },
-                100
+                try {
+                    System.out.println("Seding new reading: " + newCO2Level.toString());
+                    server.receiveStateUpdate(new ClientState(this, newCO2Level));
+                } catch (RemoteException e) {
+                    System.err.println("Failed to send new CO2 value to server");
+                }
+            },
+            100
         );
+        System.out.println("CO2 client created");
     }
 
     public CO2ClientImpl(CO2Server server, int floor, double rZeroValue) throws IOException {
@@ -43,7 +46,8 @@ public class CO2ClientImpl extends UnicastRemoteObject implements CO2Client, Unr
 
     @Override
     public void updateState(Collection<FloorValueState> floorValueStates) throws RemoteException {
-        System.out.println("Got floor state list from server");
+        System.out.print("Got floor states from server: ");
+        System.out.println(Arrays.toString(floorValueStates.toArray()));
         floorStates = new ArrayList<>(floorValueStates);
     }
 
