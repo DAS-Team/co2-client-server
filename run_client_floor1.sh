@@ -1,0 +1,1 @@
+./gradlew runTestClient -Djava.rmi.server.hostname=localhost -Dexec.args="localhost 1 0"
