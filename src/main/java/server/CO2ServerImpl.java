@@ -97,7 +97,8 @@ public class CO2ServerImpl extends UnicastRemoteObject implements CO2Server {
         floorValueMap
                 .entrySet()
                 .stream()
-                .filter(e -> hasFloorValueOrderingChanged(e.getKey(), floorValueMap))
+                // For now, send state continiously even if ordering hasn't changed
+                //.filter(e -> hasFloorValueOrderingChanged(e.getKey(), floorValueMap))
                 .forEach(e -> e.getKey().publishFloorValueStates(e.getValue()));
 
         prevFloorValueMap = floorValueMap;

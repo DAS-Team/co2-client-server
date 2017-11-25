@@ -12,6 +12,7 @@ public class DummySensorReader implements SensorReader {
     private double co2Delta = 0.0;
     private double prevCO2 = 0.0;
     private int delayBetweenReadings = 1000;
+    private int randomiser = (int) (System.currentTimeMillis() % 1000);
 
     private class PollTask extends TimerTask {
 
@@ -46,8 +47,7 @@ public class DummySensorReader implements SensorReader {
 
     @Override
     public double pollForPPM() throws IOException {
-        long timestamp = System.currentTimeMillis();
-        double randomReading = (timestamp/100000)%700 + random.nextDouble()*30;
+        double randomReading = this.randomiser + random.nextDouble()*30;
         return randomReading;
     }
 
