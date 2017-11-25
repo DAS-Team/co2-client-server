@@ -1,5 +1,11 @@
 # co2-client-server
 
+## Quick run on Linux (no sensors or Raspberries needed)
+
+1. Run `./run_server.sh`
+2. Run `./run_client_floor1.sh`
+3. Run `./run_client_floor2.sh` (each in different terminal)
+
 ## Raspberry Pi Setup
 
 1. Download the latest Raspbian Stretch Lite from [here](https://www.raspberrypi.org/downloads/raspbian/).
