@@ -2,20 +2,28 @@ package server;
 
 import client.CO2Client;
 import client.ClientState;
+import org.jfree.ui.ApplicationFrame;
 
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class CO2ServerImpl extends UnicastRemoteObject implements CO2Server {
     private final Map<Integer, Floor> floors;
     private final double FLOOR_WEIGHTING = 0.5; // alpha / beta in report
     private Map<Floor, List<FloorValueState>> prevFloorValueMap = new HashMap<>();
+    private final Charter charter = new Charter("CO2 Chart");
+    private final ExecutorService clientUpdaterService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 
 
     public CO2ServerImpl() throws RemoteException {
         super();
         this.floors = new HashMap<>();
+        ApplicationFrame panel = charter.render();
+        panel.pack();
+        panel.setVisible(true);
     }
 
 
@@ -99,7 +107,21 @@ public class CO2ServerImpl extends UnicastRemoteObject implements CO2Server {
                 .stream()
                 // For now, send state continiously even if ordering hasn't changed
                 //.filter(e -> hasFloorValueOrderingChanged(e.getKey(), floorValueMap))
-                .forEach(e -> e.getKey().publishFloorValueStates(e.getValue()));
+                .forEach(e -> {
+                    List<CO2Client> floorClients = e.getKey().getClients();
+
+                    for(CO2Client client: floorClients){
+                        clientUpdaterService.submit(() -> {
+                            try {
+                                client.updateState(new FloorValueStates(e.getValue()));
+                            } catch (RemoteException e1) {
+                                System.out.println("Error updating client state");
+                            }
+                        });
+                    }
+
+
+                });
 
         prevFloorValueMap = floorValueMap;
     }
@@ -108,6 +130,7 @@ public class CO2ServerImpl extends UnicastRemoteObject implements CO2Server {
     public synchronized void receiveStateUpdate(ClientState newState) throws RemoteException {
         System.out.println("Client " + newState.getClientUuid() + " reading: " + newState.getPpm());
         floors.get(newState.getFloorNum()).addStateUpdate(newState);
+        charter.addClientState(newState);
         publishIfStateChanged();
     }
 }

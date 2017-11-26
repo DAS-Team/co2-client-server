@@ -2,6 +2,7 @@ package client;
 
 import server.CO2Server;
 import server.FloorValueState;
+import server.FloorValueStates;
 
 import java.io.IOException;
 import java.rmi.RemoteException;
@@ -19,6 +20,7 @@ public class CO2ClientImpl extends UnicastRemoteObject implements CO2Client, Unr
     private List<FloorValueState> floorStates;
     private final int floor;
     private final SensorReader sensor;
+    private long prevUpdateId = Long.MIN_VALUE;
 
     public CO2ClientImpl(SensorReader sensorReader, CO2Server server, int floor) throws RemoteException {
         super();
@@ -45,10 +47,13 @@ public class CO2ClientImpl extends UnicastRemoteObject implements CO2Client, Unr
     }
 
     @Override
-    public void updateState(Collection<FloorValueState> floorValueStates) throws RemoteException {
-        System.out.print("Got floor states from server: ");
-        System.out.println(Arrays.toString(floorValueStates.toArray()));
-        floorStates = new ArrayList<>(floorValueStates);
+    public void updateState(FloorValueStates floorValueStates) throws RemoteException {
+        if(floorValueStates.getId() >= prevUpdateId) {
+            System.out.print("Got floor states from server: ");
+            System.out.println(Arrays.toString(floorValueStates.getStates().toArray()));
+            floorStates = new ArrayList<>(floorValueStates.getStates());
+            prevUpdateId = floorValueStates.getId();
+        }
     }
 
     @Override

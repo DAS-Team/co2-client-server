@@ -78,6 +78,7 @@ public class Charter extends ApplicationFrame {
     private void refreshChart(){
         ChartPanel panel = (ChartPanel) getContentPane();
         panel.getChart().getXYPlot().setDataset(generateDataset());
+        panel.removeAll();
         panel.repaint();
         System.out.println("Refresh done");
         needsRedraw = false;

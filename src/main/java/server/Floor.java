@@ -121,20 +121,8 @@ public class Floor {
                 '}';
     }
 
-    /**
-     * Send new {@code floorValueStates} to client.
-     * @param floorValueStates
-     */
-    public synchronized void publishFloorValueStates(Collection<FloorValueState> floorValueStates){
-        for(CO2Client client: clients){
-            try {
-                client.updateState(floorValueStates);
-            }
-            catch(RemoteException e){
-                System.err.println("Send to client failed");
-                e.printStackTrace();
-            }
-        }
+    public List<CO2Client> getClients(){
+        return new ArrayList<>(clients);
     }
 
     public int getFloorNum() {

@@ -1,6 +1,7 @@
 package client;
 
 import server.FloorValueState;
+import server.FloorValueStates;
 
 import java.io.IOException;
 import java.rmi.Remote;
@@ -13,7 +14,7 @@ public interface CO2Client extends Remote, AutoCloseable {
      * Updates view of current network state.
      * @param floorValueStates list of value states of all floors.
      */
-    void updateState(Collection<FloorValueState> floorValueStates) throws RemoteException;
+    void updateState(FloorValueStates floorValueStates) throws RemoteException;
 
     /**
      * @return the floor of the building that the client is located on.
