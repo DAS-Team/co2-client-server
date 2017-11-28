@@ -1,6 +1,8 @@
 package server;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -12,8 +14,8 @@ public class FloorValueStates implements Serializable {
     private final long id;
     private final List<FloorValueState> states;
 
-    public FloorValueStates(List<FloorValueState> states) {
-        this.states = states;
+    public FloorValueStates(Collection<FloorValueState> states) {
+        this.states = new ArrayList<>(states);
         this.id = currentId.getAndIncrement();
     }
 

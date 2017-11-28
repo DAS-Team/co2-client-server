@@ -13,6 +13,8 @@ public class DummySensorReader implements SensorReader {
     private double prevCO2 = 0.0;
     private int delayBetweenReadings = 1000;
     private int randomiser = (int) (System.currentTimeMillis() % 1000);
+    private boolean timerCancelled = false;
+    private PollTask task;
 
     private class PollTask extends TimerTask {
 
@@ -23,12 +25,18 @@ public class DummySensorReader implements SensorReader {
                 /*if (listener != null && Math.abs(prevCO2 - newCo2) >= co2Delta){
                     listener.onCO2LevelChange(newCo2);
                 }*/
-                listener.onCO2LevelChange(newCo2);
+
+                if(listener != null) {
+                    listener.onCO2LevelChange(newCo2);
+                }
                 prevCO2 = newCo2;
-            } catch (IOException e) {
-                e.printStackTrace();
+            } catch (Exception ignored) {
             }
-            timer.schedule(new PollTask(), delayBetweenReadings);
+
+            if(!timerCancelled) {
+                task = new PollTask();
+                timer.schedule(task, delayBetweenReadings);
+            }
         }
     }
 
@@ -36,12 +44,22 @@ public class DummySensorReader implements SensorReader {
     public void setListener(CO2ChangeEventListener listener, double co2Delta) {
         this.co2Delta = co2Delta;
         this.listener = listener;
-        timer.schedule(new PollTask(), 60 * 1000);
+        timerCancelled = false;
+        timer = new Timer();
+
+        task = new PollTask();
+
+        timer.schedule(task, 10 * 1000);
     }
 
     @Override
     public void removeListener() {
-        timer.cancel();
+        if(!timerCancelled){
+            task.cancel();
+            timer.cancel();
+            timerCancelled = true;
+        }
+
         this.listener = null;
     }
 
@@ -53,6 +71,9 @@ public class DummySensorReader implements SensorReader {
 
     @Override
     public void close() throws Exception {
-        timer.cancel();
+        if(!timerCancelled){
+            timer.cancel();
+            timerCancelled = true;
+        }
     }
 }

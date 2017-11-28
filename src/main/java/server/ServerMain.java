@@ -12,6 +12,7 @@ public class ServerMain {
     public static void main(String[] args) throws RemoteException, MalformedURLException {
         int port = 1099;
         String hostname;
+        int numThreads = 0;
 
         if(args.length == 0){
             System.err.println("No URL provided");
@@ -21,10 +22,14 @@ public class ServerMain {
             hostname = args[0];
         }
 
+        if(args.length >= 2){
+            numThreads = Integer.valueOf(args[1]);
+        }
+
         String bindAddr = "//" + hostname + ":" + port + "/server";
         LocateRegistry.createRegistry(1099);
 
-        CO2Server server = new CO2ServerImpl();
+        CO2Server server = new CO2ServerImpl(numThreads);
 
         Naming.rebind(bindAddr, server);
 

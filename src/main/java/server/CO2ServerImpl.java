@@ -2,22 +2,21 @@ package server;
 
 import client.CO2Client;
 import client.ClientState;
-import org.jfree.ui.ApplicationFrame;
 
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
 public class CO2ServerImpl extends UnicastRemoteObject implements CO2Server {
     private final Map<Integer, Floor> floors;
     private final double FLOOR_WEIGHTING = 0.5; // alpha / beta in report
-    private Map<Floor, List<FloorValueState>> prevFloorValueMap = new HashMap<>();
+    private Map<Floor, SortedSet<FloorValueState>> prevFloorValueMap = new HashMap<>();
     //private final Charter charter = new Charter("CO2 Chart");
-    //private final ExecutorService clientUpdaterService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+    private Executor clientUpdaterService;
     private final List<Duration> timeDeltas = new ArrayList<>();
 
     public CO2ServerImpl() throws RemoteException {
@@ -26,6 +25,25 @@ public class CO2ServerImpl extends UnicastRemoteObject implements CO2Server {
         //ApplicationFrame panel = charter.render();
         //panel.pack();
         //panel.setVisible(true);
+        init(0);
+    }
+
+    /**
+     * @param numThreads if > 0, updates sent out to clients will be sent by a threadpool with this many threads.
+     * @throws RemoteException
+     */
+    public CO2ServerImpl(int numThreads) throws RemoteException {
+        this();
+        init(numThreads);
+    }
+
+    private void init(int numThreads){
+        if(numThreads <= 0){
+            clientUpdaterService = Runnable::run;
+        }
+        else {
+            clientUpdaterService = Executors.newFixedThreadPool(numThreads);
+        }
     }
 
 
@@ -56,12 +74,12 @@ public class CO2ServerImpl extends UnicastRemoteObject implements CO2Server {
     /**
      * @return a {@link Map} from {@link Floor}s to the {@link FloorValueState}s of every floor from that one.
      */
-    private Map<Floor, List<FloorValueState>> calcFloorValueMap(){
-        Map<Floor, List<FloorValueState>> floorValueMap = new HashMap<>();
+    private Map<Floor, SortedSet<FloorValueState>> calcFloorValueMap(){
+        Map<Floor, SortedSet<FloorValueState>> floorValueMap = new HashMap<>();
 
         for(Floor currentFloor: floors.values()){
             for(Floor newFloor: floors.values()){
-                floorValueMap.putIfAbsent(currentFloor, new ArrayList<>());
+                floorValueMap.putIfAbsent(currentFloor, new TreeSet<>());
                 floorValueMap.get(currentFloor).add(new FloorValueState(newFloor, currentFloor.valueOfMovingTo(newFloor, FLOOR_WEIGHTING)));
             }
         }
@@ -74,26 +92,26 @@ public class CO2ServerImpl extends UnicastRemoteObject implements CO2Server {
      * This method returns true iff this total ordering has changed since {@link #publishIfStateChanged()} was last called.
      *
      * @param floor a {@link Floor} to check for total ordering changes on.
-     * @param floorValueMap a {@link Map} from floors to its current {@link FloorValueState}s
+     * @param floorValues {@code floor}'s current {@link FloorValueState}s
      * @return true iff this total ordering has changed since {@link #publishIfStateChanged()} was last called.
      */
-    private boolean hasFloorValueOrderingChanged(Floor floor, Map<Floor, List<FloorValueState>> floorValueMap){
-        List<FloorValueState> sortedNewStateSet = floorValueMap.get(floor);
-        List<FloorValueState> sortedPrevStateSet = prevFloorValueMap.getOrDefault(floor,  null);
+    private boolean hasFloorValueOrderingChanged(Floor floor, SortedSet<FloorValueState> floorValues){
+        List<FloorValueState> sortedNewStateList = new ArrayList<>(floorValues);
+        SortedSet<FloorValueState> sortedPrevStateSet = prevFloorValueMap.getOrDefault(floor, null);
+
 
         if(sortedPrevStateSet == null){
             return true;
         }
 
-        if(sortedNewStateSet.size() != sortedPrevStateSet.size()){
+        List<FloorValueState> sortedPrevStateList = new ArrayList<>(sortedPrevStateSet);
+
+        if(sortedNewStateList.size() != sortedPrevStateSet.size()){
             return true;
         }
 
-        Collections.sort(sortedNewStateSet);
-        Collections.sort(sortedPrevStateSet);
-
-        for(int i = 0; i < sortedNewStateSet.size(); ++i){
-            if(sortedNewStateSet.get(i).getNewFloor() != sortedPrevStateSet.get(i).getNewFloor()){
+        for(int i = 0; i < sortedNewStateList.size(); ++i){
+            if(sortedNewStateList.get(i).getNewFloor() != sortedPrevStateList.get(i).getNewFloor()){
                 return true;
             }
         }
@@ -101,32 +119,33 @@ public class CO2ServerImpl extends UnicastRemoteObject implements CO2Server {
         return false;
     }
 
-    @Override
-    public synchronized void publishIfStateChanged() throws RemoteException {
+    private void publishIfStateChanged() throws RemoteException {
         if(floors.isEmpty()){
             return;
         }
 
-        Map<Floor, List<FloorValueState>> floorValueMap = calcFloorValueMap();
+        Map<Floor, SortedSet<FloorValueState>> floorValueMap;
+
+        synchronized (this) {
+            floorValueMap = calcFloorValueMap();
+        }
 
         floorValueMap
                 .entrySet()
                 .stream()
-                // For now, send state continiously even if ordering hasn't changed
-                .filter(e -> hasFloorValueOrderingChanged(e.getKey(), floorValueMap))
+                // For now, send state continuously even if ordering hasn't changed
+                .filter(e -> hasFloorValueOrderingChanged(e.getKey(), e.getValue()))
                 .forEach(e -> {
                     List<CO2Client> floorClients = e.getKey().getClients();
+                    FloorValueStates floorValueState = new FloorValueStates(e.getValue());
 
-                    for(CO2Client client: floorClients){
-                        //clientUpdaterService.submit(() -> {
-                            try {
-                                client.updateState(new FloorValueStates(e.getValue()));
-                            } catch (RemoteException e1) {
-                                System.out.println("Error updating client state");
-                            }
+                    floorClients.forEach(client -> clientUpdaterService.execute(() -> {
+                        try {
+                            client.updateState(floorValueState);
+                        } catch (RemoteException e1) {
+                            System.out.println("Error updating client state");
                         }
-                    //}
-
+                    }));
 
                 });
 

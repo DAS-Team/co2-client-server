@@ -3,8 +3,10 @@ package server;
 import client.CO2Client;
 import client.ClientState;
 
-import java.rmi.RemoteException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * A floor of a building, consisting of a number of CO2 sensors.
@@ -61,7 +63,7 @@ public class Floor {
      *         occured since the last call.
      * @throws IllegalStateException if no states have been recorded yet.
      */
-    public synchronized double averagePPM(){
+    private double averagePPM(){
         if(stateUpdates.isEmpty()){
             if(prevC02Level == Double.POSITIVE_INFINITY){
                 throw new IllegalStateException("Cannot calculate average, no states seen yet");

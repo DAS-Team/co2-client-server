@@ -8,9 +8,6 @@ import java.io.IOException;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.rmi.server.Unreferenced;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -60,7 +57,7 @@ public class CO2ClientImpl extends UnicastRemoteObject implements CO2Client, Unr
     @Override
     public void updateState(FloorValueStates floorValueStates) throws RemoteException {
         if(floorValueStates.getId() >= prevUpdateId) {
-            floorStates = new ArrayList<>(floorValueStates.getStates());
+            floorStates = floorValueStates.getStates();
             prevUpdateId = floorValueStates.getId();
         }
     }
