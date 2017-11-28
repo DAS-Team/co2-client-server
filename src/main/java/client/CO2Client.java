@@ -1,12 +1,10 @@
 package client;
 
-import server.FloorValueState;
 import server.FloorValueStates;
 
 import java.io.IOException;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
-import java.util.Collection;
 import java.util.UUID;
 
 public interface CO2Client extends Remote, AutoCloseable {
@@ -30,5 +28,11 @@ public interface CO2Client extends Remote, AutoCloseable {
      * @return the current CO2 sensor value in parts-per-million.
      */
     double pollForPPM() throws IOException;
+
+    /**
+     * Called by the server when it has registered the client.
+     * @param ready true if the server is subscribing the client, false if it is unsubscribing.
+     */
+    void setReady(boolean ready) throws RemoteException;
 
 }

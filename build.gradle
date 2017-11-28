@@ -29,6 +29,12 @@ task runTestClient(type: JavaExec){
     args System.getProperty("exec.args", "").split()
 }
 
+task runStressTestClients(type: JavaExec){
+    classpath sourceSets.main.runtimeClasspath
+    main = "client.StressTestClientMain"
+    args System.getProperty("exec.args", "").split()
+}
+
 dependencies {
     testCompile group: 'junit', name: 'junit', version: '4.12'
     compile group: 'org.openmuc', name: 'jrxtx', version: '1.0.0'

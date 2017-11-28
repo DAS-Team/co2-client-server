@@ -19,7 +19,7 @@ public class DummySensorReader implements SensorReader {
         @Override
         public void run() {
             try {
-                Double newCo2 = pollForPPM();
+                double newCo2 = pollForPPM();
                 /*if (listener != null && Math.abs(prevCO2 - newCo2) >= co2Delta){
                     listener.onCO2LevelChange(newCo2);
                 }*/
@@ -36,7 +36,7 @@ public class DummySensorReader implements SensorReader {
     public void setListener(CO2ChangeEventListener listener, double co2Delta) {
         this.co2Delta = co2Delta;
         this.listener = listener;
-        timer.schedule(new PollTask(), delayBetweenReadings);
+        timer.schedule(new PollTask(), 60 * 1000);
     }
 
     @Override
