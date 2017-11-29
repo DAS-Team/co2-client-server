@@ -18,7 +18,6 @@ public class CO2ClientImpl extends UnicastRemoteObject implements CO2Client, Unr
     private final int floor;
     private final SensorReader sensor;
     private long prevUpdateId = Long.MIN_VALUE;
-    private boolean ready = false;
 
     public CO2ClientImpl(SensorReader sensorReader, CO2Server server, int floor) throws RemoteException {
         super();
@@ -31,8 +30,6 @@ public class CO2ClientImpl extends UnicastRemoteObject implements CO2Client, Unr
     }
 
     public void setReady(boolean ready){
-        this.ready = ready;
-
         if(ready) {
             sensor.setListener(newCO2Level -> {
                         try {
@@ -55,7 +52,7 @@ public class CO2ClientImpl extends UnicastRemoteObject implements CO2Client, Unr
     }
 
     @Override
-    public void updateState(FloorValueStates floorValueStates) throws RemoteException {
+    public synchronized void updateState(FloorValueStates floorValueStates) throws RemoteException {
         if(floorValueStates.getId() >= prevUpdateId) {
             floorStates = floorValueStates.getStates();
             prevUpdateId = floorValueStates.getId();
@@ -108,7 +105,6 @@ public class CO2ClientImpl extends UnicastRemoteObject implements CO2Client, Unr
 
     @Override
     public void close() throws Exception {
-        this.ready = false;
         server.unsubscribe(this);
         sensor.close();
     }

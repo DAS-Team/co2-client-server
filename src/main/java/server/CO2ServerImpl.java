@@ -96,22 +96,21 @@ public class CO2ServerImpl extends UnicastRemoteObject implements CO2Server {
      * @return true iff this total ordering has changed since {@link #publishIfStateChanged()} was last called.
      */
     private boolean hasFloorValueOrderingChanged(Floor floor, SortedSet<FloorValueState> floorValues){
-        List<FloorValueState> sortedNewStateList = new ArrayList<>(floorValues);
         SortedSet<FloorValueState> sortedPrevStateSet = prevFloorValueMap.getOrDefault(floor, null);
-
 
         if(sortedPrevStateSet == null){
             return true;
         }
 
-        List<FloorValueState> sortedPrevStateList = new ArrayList<>(sortedPrevStateSet);
-
-        if(sortedNewStateList.size() != sortedPrevStateSet.size()){
+        if(sortedPrevStateSet.size() != floorValues.size()){
             return true;
         }
 
-        for(int i = 0; i < sortedNewStateList.size(); ++i){
-            if(sortedNewStateList.get(i).getNewFloor() != sortedPrevStateList.get(i).getNewFloor()){
+        Iterator<FloorValueState> it1 = sortedPrevStateSet.iterator();
+        Iterator<FloorValueState> it2 = floorValues.iterator();
+
+        while(it1.hasNext() && it2.hasNext()){
+            if(it1.next().getNewFloor() != it2.next().getNewFloor()){
                 return true;
             }
         }
@@ -132,8 +131,7 @@ public class CO2ServerImpl extends UnicastRemoteObject implements CO2Server {
 
         floorValueMap
                 .entrySet()
-                .stream()
-                // For now, send state continuously even if ordering hasn't changed
+                .parallelStream()
                 .filter(e -> hasFloorValueOrderingChanged(e.getKey(), e.getValue()))
                 .forEach(e -> {
                     List<CO2Client> floorClients = e.getKey().getClients();
