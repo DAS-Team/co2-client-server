@@ -12,18 +12,23 @@ public class DummySensorReader implements SensorReader {
     private double co2Delta = 0.0;
     private double prevCO2 = 0.0;
     private int delayBetweenReadings = 1000;
-    private int randomiser = (int) (System.currentTimeMillis() % 1000);
+    private double randomiser = 10;
 
     private class PollTask extends TimerTask {
 
         @Override
         public void run() {
+            // 1 in 20 the randomiser chnages to something different
+            /*if (ThreadLocalRandom.current().nextInt(1, 21) == 1) {
+                randomiser = (int) (System.currentTimeMillis() % 1000);
+            }*/
+
             try {
-                Double newCo2 = pollForPPM();
-                /*if (listener != null && Math.abs(prevCO2 - newCo2) >= co2Delta){
+                Double newCo2 = pollForPPM();   
+                if (listener != null && Math.abs(prevCO2 - newCo2) >= co2Delta){
                     listener.onCO2LevelChange(newCo2);
-                }*/
-                listener.onCO2LevelChange(newCo2);
+                }
+                //listener.onCO2LevelChange(newCo2);
                 prevCO2 = newCo2;
             } catch (IOException e) {
                 e.printStackTrace();
@@ -36,6 +41,7 @@ public class DummySensorReader implements SensorReader {
     public void setListener(CO2ChangeEventListener listener, double co2Delta) {
         this.co2Delta = co2Delta;
         this.listener = listener;
+        this.randomiser = System.currentTimeMillis() % 10;
         timer.schedule(new PollTask(), delayBetweenReadings);
     }
 
@@ -47,7 +53,8 @@ public class DummySensorReader implements SensorReader {
 
     @Override
     public double pollForPPM() throws IOException {
-        double randomReading = this.randomiser + random.nextDouble()*30;
+        //double randomReading = this.randomiser + random.nextDouble()*30;
+        double randomReading = (java.lang.Math.sin(System.currentTimeMillis()/15000.0 + this.randomiser)+1)*50 + 500 + random.nextDouble()%10;
         return randomReading;
     }
 

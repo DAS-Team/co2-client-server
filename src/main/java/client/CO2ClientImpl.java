@@ -31,13 +31,13 @@ public class CO2ClientImpl extends UnicastRemoteObject implements CO2Client, Unr
 
         sensor.setListener(newCO2Level -> {
                 try {
-                    System.out.println("Seding new reading: " + newCO2Level.toString());
+                    System.out.println("Sending new reading: " + newCO2Level.toString());
                     server.receiveStateUpdate(new ClientState(this, newCO2Level));
                 } catch (RemoteException e) {
                     System.err.println("Failed to send new CO2 value to server");
                 }
             },
-            100
+            0
         );
         System.out.println("CO2 client created");
     }
@@ -49,8 +49,9 @@ public class CO2ClientImpl extends UnicastRemoteObject implements CO2Client, Unr
     @Override
     public void updateState(FloorValueStates floorValueStates) throws RemoteException {
         if(floorValueStates.getId() >= prevUpdateId) {
-            System.out.print("Got floor states from server: ");
-            System.out.println(Arrays.toString(floorValueStates.getStates().toArray()));
+            System.out.print("New floor suggestion: ");
+            //System.out.println(floorValueStates.getStates().get(0).getNewFloor());
+            System.out.println(floorValueStates.getStates().get(0).getNewFloor());
             floorStates = new ArrayList<>(floorValueStates.getStates());
             prevUpdateId = floorValueStates.getId();
         }

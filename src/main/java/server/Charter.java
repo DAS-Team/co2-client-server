@@ -80,7 +80,7 @@ public class Charter extends ApplicationFrame {
         panel.getChart().getXYPlot().setDataset(generateDataset());
         panel.removeAll();
         panel.repaint();
-        System.out.println("Refresh done");
+        //System.out.println("Refresh done");
         needsRedraw = false;
     }
 
