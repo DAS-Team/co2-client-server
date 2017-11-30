@@ -2,8 +2,8 @@ package server;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
+import java.util.SortedSet;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -14,16 +14,31 @@ public class FloorValueStates implements Serializable {
     private final long id;
     private final List<FloorValueState> states;
 
-    public FloorValueStates(Collection<FloorValueState> states) {
+    public FloorValueStates(SortedSet<FloorValueState> states) {
         this.states = new ArrayList<>(states);
         this.id = currentId.getAndIncrement();
     }
 
-    public List<FloorValueState> getStates() {
+    public List<FloorValueState> getSortedStates() {
         return states;
     }
 
     public long getId() {
         return id;
+    }
+
+    public boolean isEmpty(){
+        return states.isEmpty();
+    }
+
+    public int size(){
+        return states.size();
+    }
+
+    @Override
+    public String toString() {
+        return "FloorValueStates{" +
+                "states=" + states +
+                '}';
     }
 }

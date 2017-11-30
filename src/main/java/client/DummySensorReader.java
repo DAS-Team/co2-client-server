@@ -12,7 +12,7 @@ public class DummySensorReader implements SensorReader {
     private double co2Delta = 0.0;
     private double prevCO2 = 0.0;
     private int delayBetweenReadings = 1000;
-    private int randomiser = (int) (System.currentTimeMillis() % 1000);
+    private long randomiser = System.currentTimeMillis() % 10;
     private boolean timerCancelled = false;
     private PollTask task;
 
@@ -49,7 +49,7 @@ public class DummySensorReader implements SensorReader {
 
         task = new PollTask();
 
-        timer.schedule(task, 10 * 1000);
+        timer.schedule(task, 10 * 1000 + random.nextInt(2000));
     }
 
     @Override
@@ -65,7 +65,8 @@ public class DummySensorReader implements SensorReader {
 
     @Override
     public double pollForPPM() throws IOException {
-        double randomReading = this.randomiser + random.nextDouble()*30;
+        //double randomReading = this.randomiser + random.nextDouble()*30;
+        double randomReading = (java.lang.Math.sin(System.currentTimeMillis()/15000.0 + this.randomiser)+1)*50 + 500 + random.nextDouble()%10;
         return randomReading;
     }
 

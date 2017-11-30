@@ -8,16 +8,22 @@ import java.rmi.server.UnicastRemoteObject;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
 public class CO2ServerImpl extends UnicastRemoteObject implements CO2Server {
     private final Map<Integer, Floor> floors;
     private final double FLOOR_WEIGHTING = 0.5; // alpha / beta in report
-    private Map<Floor, SortedSet<FloorValueState>> prevFloorValueMap = new HashMap<>();
+    private Map<Floor, SortedSet<FloorValueState>> prevFloorValueMap = new ConcurrentHashMap<>();
     //private final Charter charter = new Charter("CO2 Chart");
     private Executor clientUpdaterService;
     private final List<Duration> timeDeltas = new ArrayList<>();
+    private boolean statesAdded = false;
+    private final Timer publishTimer = new Timer();
+    private static final long PUBLISH_RATE = 50;
+    private int numThreads;
+
 
     public CO2ServerImpl() throws RemoteException {
         super();
@@ -26,6 +32,17 @@ public class CO2ServerImpl extends UnicastRemoteObject implements CO2Server {
         //panel.pack();
         //panel.setVisible(true);
         init(0);
+
+        this.publishTimer.scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                try {
+                    publishIfStateChanged();
+                } catch (RemoteException e) {
+                    System.err.println("Error in publishing");
+                }
+            }
+        }, 0, PUBLISH_RATE);
     }
 
     /**
@@ -44,6 +61,8 @@ public class CO2ServerImpl extends UnicastRemoteObject implements CO2Server {
         else {
             clientUpdaterService = Executors.newFixedThreadPool(numThreads);
         }
+
+        this.numThreads = numThreads;
     }
 
 
@@ -75,14 +94,18 @@ public class CO2ServerImpl extends UnicastRemoteObject implements CO2Server {
      * @return a {@link Map} from {@link Floor}s to the {@link FloorValueState}s of every floor from that one.
      */
     private Map<Floor, SortedSet<FloorValueState>> calcFloorValueMap(){
-        Map<Floor, SortedSet<FloorValueState>> floorValueMap = new HashMap<>();
+        Map<Floor, SortedSet<FloorValueState>> floorValueMap = new ConcurrentHashMap<>();
+        Map<Floor, Double> averageCO2Levels = new HashMap<>();
 
-        for(Floor currentFloor: floors.values()){
-            for(Floor newFloor: floors.values()){
-                floorValueMap.putIfAbsent(currentFloor, new TreeSet<>());
-                floorValueMap.get(currentFloor).add(new FloorValueState(newFloor, currentFloor.valueOfMovingTo(newFloor, FLOOR_WEIGHTING)));
-            }
+        for(Floor floor: floors.values()){
+            averageCO2Levels.put(floor, floor.averagePPM());
         }
+
+        floors.values().parallelStream().forEach(currentFloor -> floors.values().forEach(newFloor -> {
+            floorValueMap.putIfAbsent(currentFloor, new TreeSet<>());
+            floorValueMap.get(currentFloor).add(new FloorValueState(newFloor, Floor.valueOfMovingBetween(currentFloor, averageCO2Levels.get(currentFloor), newFloor, averageCO2Levels.get(newFloor), FLOOR_WEIGHTING)));
+        }));
+
 
         return floorValueMap;
     }
@@ -106,6 +129,7 @@ public class CO2ServerImpl extends UnicastRemoteObject implements CO2Server {
             return true;
         }
 
+
         Iterator<FloorValueState> it1 = sortedPrevStateSet.iterator();
         Iterator<FloorValueState> it2 = floorValues.iterator();
 
@@ -118,33 +142,51 @@ public class CO2ServerImpl extends UnicastRemoteObject implements CO2Server {
         return false;
     }
 
-    private void publishIfStateChanged() throws RemoteException {
-        if(floors.isEmpty()){
-            return;
+    private <T> List<List<T>> partition(List<T> list, int numPartitions){
+        // Approx. equal partitions, fine for our purposes
+        int partitionLen = (list.size() / numPartitions) + 1;
+
+        List<List<T>> partitions = new ArrayList<>();
+
+        for(int i = 0; i < partitionLen; ++i){
+            partitions.add(new ArrayList<>());
         }
 
+        for(int i = 0; i < list.size(); ++i){
+            partitions.get(i / partitionLen).add(list.get(i));
+        }
+
+        return partitions;
+    }
+
+    private void publishIfStateChanged() throws RemoteException {
         Map<Floor, SortedSet<FloorValueState>> floorValueMap;
 
         synchronized (this) {
+            if(floors.isEmpty() || !statesAdded){
+                return;
+            }
+            statesAdded = false;
             floorValueMap = calcFloorValueMap();
         }
 
         floorValueMap
                 .entrySet()
-                .parallelStream()
+                .stream()
                 .filter(e -> hasFloorValueOrderingChanged(e.getKey(), e.getValue()))
                 .forEach(e -> {
                     List<CO2Client> floorClients = e.getKey().getClients();
                     FloorValueStates floorValueState = new FloorValueStates(e.getValue());
 
-                    floorClients.forEach(client -> clientUpdaterService.execute(() -> {
-                        try {
-                            client.updateState(floorValueState);
-                        } catch (RemoteException e1) {
-                            System.out.println("Error updating client state");
-                        }
-                    }));
-
+                    for (CO2Client client : floorClients) {
+                        clientUpdaterService.execute(() -> {
+                            try {
+                                client.updateState(floorValueState);
+                            } catch (RemoteException e1) {
+                                System.out.println("Error updating client state");
+                            }
+                        });
+                    }
                 });
 
         prevFloorValueMap = floorValueMap;
@@ -152,19 +194,15 @@ public class CO2ServerImpl extends UnicastRemoteObject implements CO2Server {
 
     @Override
     public synchronized void receiveStateUpdate(ClientState newState) throws RemoteException {
-        System.out.println("Client " + newState.getClientUuid() + " reading: " + newState.getPpm());
+        System.out.println("Client " + newState.getClientUuid() + " reading: " + newState.getPpm() + ", floor: " + newState.getFloorNum());
 
         floors.get(newState.getFloorNum()).addStateUpdate(newState);
+        statesAdded = true;
 
         //charter.addClientState(newState);
 
-        publishIfStateChanged();
         timeDeltas.add(Duration.between(newState.getTimestamp(), Instant.now()));
-
-
         System.out.println("Avg: " + timeDeltas.stream().map(Duration::toMillis).mapToDouble(d -> d).average());
-
-
         System.out.println(Duration.between(newState.getTimestamp(), Instant.now()));
     }
 }

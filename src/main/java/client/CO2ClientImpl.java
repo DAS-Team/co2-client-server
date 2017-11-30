@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.rmi.server.Unreferenced;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -25,15 +26,13 @@ public class CO2ClientImpl extends UnicastRemoteObject implements CO2Client, Unr
         this.uuid = UUID.randomUUID();
         this.floor = floor;
         this.sensor = sensorReader;
-
-        System.out.println("CO2 client created");
+        this.floorStates = new ArrayList<>();
     }
 
     public void setReady(boolean ready){
         if(ready) {
             sensor.setListener(newCO2Level -> {
                         try {
-                            System.out.println("Sending new reading: " + newCO2Level.toString());
                             server.receiveStateUpdate(new ClientState(this, newCO2Level));
                         } catch (RemoteException e) {
                             System.err.println("Failed to send new CO2 value to server");
@@ -53,10 +52,41 @@ public class CO2ClientImpl extends UnicastRemoteObject implements CO2Client, Unr
 
     @Override
     public synchronized void updateState(FloorValueStates floorValueStates) throws RemoteException {
-        if(floorValueStates.getId() >= prevUpdateId) {
-            floorStates = floorValueStates.getStates();
-            prevUpdateId = floorValueStates.getId();
+        if (floorValueStates.getId() < prevUpdateId) {
+            return;
         }
+
+        int floorStatesSize = floorStates.size();
+        int floorValueStatesSize = floorValueStates.size();
+
+        if(!floorStates.isEmpty() && !floorValueStates.isEmpty()) {
+            if(floorStates.get(floorStatesSize - 1).getNewFloor() != floorValueStates.getSortedStates().get(floorValueStatesSize - 1).getNewFloor()){
+                int newFloor = floorValueStates.getSortedStates().get(floorValueStatesSize - 1).getNewFloor();
+
+                if(newFloor == floor){
+                    System.out.println("This is the best floor");
+                }
+                else {
+                    System.out.println("Go to floor " + newFloor);
+                }
+
+            }
+
+        }
+        else if(floorStates.isEmpty() && !floorValueStates.isEmpty()){
+            int newFloor = floorValueStates.getSortedStates().get(floorValueStatesSize - 1).getNewFloor();
+
+            if(newFloor == floor){
+                System.out.println("This is the best floor");
+            }
+            else {
+                System.out.println("Go to floor " + newFloor);
+            }
+        }
+
+
+        floorStates = floorValueStates.getSortedStates();
+        prevUpdateId = floorValueStates.getId();
     }
 
     @Override

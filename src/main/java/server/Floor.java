@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * A floor of a building, consisting of a number of CO2 sensors.
@@ -24,7 +25,7 @@ public class Floor {
     public Floor(int floorNum, Set<CO2Client> clients) {
         this.clients = clients;
         this.floorNum = floorNum;
-        stateUpdates = new ArrayList<>();
+        stateUpdates = new CopyOnWriteArrayList<>();
     }
 
     /**
@@ -63,9 +64,9 @@ public class Floor {
      *         occured since the last call.
      * @throws IllegalStateException if no states have been recorded yet.
      */
-    private double averagePPM(){
-        if(stateUpdates.isEmpty()){
-            if(prevC02Level == Double.POSITIVE_INFINITY){
+    public synchronized double averagePPM(){
+        if (stateUpdates.isEmpty()) {
+            if (prevC02Level == Double.POSITIVE_INFINITY) {
                 throw new IllegalStateException("Cannot calculate average, no states seen yet");
             }
 
@@ -73,20 +74,18 @@ public class Floor {
         }
 
         double averagePPM = stateUpdates.stream()
-                .mapToDouble(ClientState::getPpm)
-                .average()
-                .orElse(prevC02Level);
-
-        stateUpdates.clear();
+            .mapToDouble(ClientState::getPpm)
+            .average()
+            .orElse(prevC02Level);
 
         // https://en.wikipedia.org/wiki/Exponential_smoothing
         // Prevents the occasional massive spiking seen in testing by weighting the previous value more highly
         double alpha = 0.1;
 
-        if(prevC02Level == Double.POSITIVE_INFINITY || averagePPM == Double.POSITIVE_INFINITY){
+        stateUpdates.clear();
+        if (prevC02Level == Double.POSITIVE_INFINITY || averagePPM == Double.POSITIVE_INFINITY) {
             prevC02Level = averagePPM;
-        }
-        else {
+        } else {
             prevC02Level = alpha * averagePPM + (1 - alpha) * prevC02Level;
         }
 
@@ -107,12 +106,12 @@ public class Floor {
      * @param weightingConstant alpha / beta in the paper
      * @return value of this floor move
      */
-    public synchronized double valueOfMovingTo(Floor newFloor, double weightingConstant){
-        if(newFloor.getFloorNum() == this.floorNum){
+    public static double valueOfMovingBetween(Floor currentFloor, double currentFloorPPM, Floor newFloor, double newFloorPPM, double weightingConstant){
+        if(newFloor.getFloorNum() == currentFloor.floorNum){
             return 0;
         }
         else {
-            return weightingConstant * (this.averagePPM() - newFloor.averagePPM()) / distanceToFloor(newFloor);
+            return weightingConstant * (currentFloorPPM - newFloorPPM) / currentFloor.distanceToFloor(newFloor);
         }
     }
 

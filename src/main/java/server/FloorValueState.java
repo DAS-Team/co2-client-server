@@ -37,8 +37,8 @@ public class FloorValueState implements Serializable, Comparable<FloorValueState
     @Override
     public String toString() {
         return "FloorValueState{" +
-                ", newFloor=" + newFloor +
-                ", value=" + value +
+                "newFloor=" + newFloor +
+                ", value="  + value +
                 '}';
     }
 }

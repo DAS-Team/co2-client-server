@@ -27,7 +27,7 @@ public class StressTestClientMain {
         CO2Server server = (CO2Server) Naming.lookup("//" + hostname + ":1099/server");
 
         List<CO2Client> clients = new ArrayList<>();
-        for(int i = 0; i < 200; ++i){
+        for(int i = 0; i < 800; ++i){
             CO2Client client = new CO2ClientImpl(new DummySensorReader(), server, i);
             clients.add(client);
         }
