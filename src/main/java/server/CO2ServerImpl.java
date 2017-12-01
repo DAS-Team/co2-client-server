@@ -21,8 +21,7 @@ public class CO2ServerImpl extends UnicastRemoteObject implements CO2Server {
     private final List<Duration> timeDeltas = new ArrayList<>();
     private boolean statesAdded = false;
     private final Timer publishTimer = new Timer();
-    private static final long PUBLISH_RATE = 50;
-    private int numThreads;
+    private static final long PUBLISH_RATE = 100;
 
 
     public CO2ServerImpl() throws RemoteException {
@@ -62,7 +61,6 @@ public class CO2ServerImpl extends UnicastRemoteObject implements CO2Server {
             clientUpdaterService = Executors.newFixedThreadPool(numThreads);
         }
 
-        this.numThreads = numThreads;
     }
 
 
@@ -140,23 +138,6 @@ public class CO2ServerImpl extends UnicastRemoteObject implements CO2Server {
         }
 
         return false;
-    }
-
-    private <T> List<List<T>> partition(List<T> list, int numPartitions){
-        // Approx. equal partitions, fine for our purposes
-        int partitionLen = (list.size() / numPartitions) + 1;
-
-        List<List<T>> partitions = new ArrayList<>();
-
-        for(int i = 0; i < partitionLen; ++i){
-            partitions.add(new ArrayList<>());
-        }
-
-        for(int i = 0; i < list.size(); ++i){
-            partitions.get(i / partitionLen).add(list.get(i));
-        }
-
-        return partitions;
     }
 
     private void publishIfStateChanged() throws RemoteException {

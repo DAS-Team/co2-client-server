@@ -38,7 +38,7 @@ public class CO2ClientImpl extends UnicastRemoteObject implements CO2Client, Unr
                             System.err.println("Failed to send new CO2 value to server");
                         }
                     },
-                    100
+                    20
             );
         }
         else {

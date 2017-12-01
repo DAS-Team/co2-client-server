@@ -14,20 +14,21 @@ public class StressTestClientMain {
     public static void main(String[] args) throws IOException, NotBoundException {
         String hostname;
         long timeToRunFor;
+        int numClients;
 
-        if(args.length < 1){
-            System.err.println("Wrong args provided, need rmiregistry URL");
+        if(args.length < 3){
+            System.err.println("Wrong args provided, need rmiregistry URL, time to run for in seconds, and number of clients");
         }
 
         hostname = args[0];
         timeToRunFor = Long.valueOf(args[1]);
-
+        numClients = Integer.valueOf(args[2]);
 
 
         CO2Server server = (CO2Server) Naming.lookup("//" + hostname + ":1099/server");
 
         List<CO2Client> clients = new ArrayList<>();
-        for(int i = 0; i < 800; ++i){
+        for(int i = 0; i < numClients; ++i){
             CO2Client client = new CO2ClientImpl(new DummySensorReader(), server, i);
             clients.add(client);
         }
